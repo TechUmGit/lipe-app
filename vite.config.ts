@@ -8,13 +8,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Lipe',
         short_name: 'Lipe',
         description: 'Ecossistema pessoal de apps',
-        theme_color: '#111827',
-        background_color: '#111827',
+        theme_color: '#fbf6ee',
+        background_color: '#fbf6ee',
         display: 'standalone',
         start_url: '/',
         scope: '/',

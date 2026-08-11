@@ -1,18 +1,21 @@
 :root {
-  --bg: #0b0d12;
-  --surface: #151821;
-  --surface-2: #1c202b;
-  --border: #2a2f3d;
-  --text: #e5e7eb;
-  --text-dim: #9ca3af;
-  --accent: #22d3ee;
-  --accent-dim: rgba(34, 211, 238, 0.15);
-  --danger: #f87171;
-  --success: #4ade80;
+  --bg: #fbf6ee;
+  --surface: #ffffff;
+  --surface-2: #fdf1de;
+  --border: #ecdfc7;
+  --text: #4a4235;
+  --text-dim: #948a76;
+  --accent: #f97316;
+  --accent-2: #eab308;
+  --accent-strong: #c2410c;
+  --accent-text: #431407;
+  --accent-dim: rgba(249, 115, 22, 0.12);
+  --danger: #dc2626;
+  --success: #16a34a;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 
-  color-scheme: dark;
+  color-scheme: light;
   color: var(--text);
   background: var(--bg);
   font: 16px/1.5 var(--sans);
@@ -50,7 +53,7 @@ h3 { font-size: 16px; }
 p { margin: 0; }
 
 a {
-  color: var(--accent);
+  color: var(--accent-strong);
   text-decoration: none;
 }
 
@@ -103,7 +106,7 @@ label {
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #06222a;
+  color: var(--accent-text);
 }
 
 .btn-block { width: 100%; }
@@ -120,6 +123,7 @@ label {
   border-radius: 16px;
   padding: 18px;
   text-align: left;
+  box-shadow: 0 1px 3px rgba(148, 106, 39, 0.08);
 }
 
 .stack {
@@ -158,7 +162,7 @@ label {
 .chip.active {
   background: var(--accent-dim);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-strong);
 }
 
 .chip-grid {
@@ -216,7 +220,7 @@ label {
 }
 
 .bottom-nav a.active {
-  color: var(--accent);
+  color: var(--accent-strong);
 }
 
 .progress-bar {
@@ -228,13 +232,13 @@ label {
 
 .progress-bar > div {
   height: 100%;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
 }
 
 .alert {
   border: 1px solid var(--accent);
   background: var(--accent-dim);
-  color: var(--accent);
+  color: var(--accent-text);
   border-radius: 12px;
   padding: 12px 14px;
   font-size: 14px;
