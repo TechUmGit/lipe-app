@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/lipe-app/',
   plugins: [
     react(),
     VitePWA({
@@ -16,8 +17,8 @@ export default defineConfig({
         theme_color: '#fbf6ee',
         background_color: '#fbf6ee',
         display: 'standalone',
-        start_url: '/',
-        scope: '/',
+        start_url: '/lipe-app/',
+        scope: '/lipe-app/',
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lipe</title>
+    <script>
+      // Truque padrão para SPAs no GitHub Pages: guarda a rota pedida
+      // e redireciona para a raiz do app, que depois restaura a URL.
+      sessionStorage.redirect = location.pathname + location.search + location.hash;
+      location.replace('/lipe-app/');
+    </script>
+  </head>
+  <body></body>
+</html>
