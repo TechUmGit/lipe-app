@@ -27,8 +27,7 @@ const apps: AppEntry[] = [
     to: '/financas',
     emoji: '💰',
     title: 'Controle financeiro pessoal',
-    description: 'Em breve.',
-    disabled: true,
+    description: 'Extrato, categorias e orçamento.',
   },
 ]
 

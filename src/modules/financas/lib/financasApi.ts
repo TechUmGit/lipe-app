@@ -1,0 +1,122 @@
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  runTransaction,
+  setDoc,
+  Timestamp,
+  updateDoc,
+  where,
+  writeBatch,
+} from 'firebase/firestore'
+import { db } from '../../../core/firebase'
+import { CATEGORIAS_SEED, CATEGORIA_TRANSFERENCIA_NOME, CONTAS_SEED } from './categoriasSeed'
+import type { Categoria, Lancamento, NovoLancamento } from './types'
+
+function contasRef(uid: string) {
+  return doc(db, 'users', uid, 'financas', 'contas')
+}
+
+function seedMetaRef(uid: string) {
+  return doc(db, 'users', uid, 'financas', 'seedMeta')
+}
+
+function categoriasCol(uid: string) {
+  return collection(db, 'users', uid, 'financas_categorias')
+}
+
+function lancamentosCol(uid: string) {
+  return collection(db, 'users', uid, 'financas_lancamentos')
+}
+
+export async function getContas(uid: string): Promise<string[]> {
+  const snap = await getDoc(contasRef(uid))
+  return snap.exists() ? ((snap.data().itens as string[]) ?? []) : []
+}
+
+export async function salvarContas(uid: string, itens: string[]) {
+  await setDoc(contasRef(uid), { itens, updatedAt: Date.now() })
+}
+
+export async function getCategorias(uid: string): Promise<Categoria[]> {
+  const snap = await getDocs(categoriasCol(uid))
+  const categorias = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Categoria)
+  return categorias.sort((a, b) => a.ordem - b.ordem)
+}
+
+export async function garantirSeedInicial(uid: string) {
+  const jaSemeado = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(seedMetaRef(uid))
+    if (snap.exists()) return true
+    tx.set(seedMetaRef(uid), { seededAt: Date.now() })
+    return false
+  })
+  if (jaSemeado) return
+
+  const batch = writeBatch(db)
+  for (const c of CATEGORIAS_SEED) {
+    batch.set(doc(categoriasCol(uid)), c)
+  }
+  batch.set(doc(categoriasCol(uid)), {
+    nome: CATEGORIA_TRANSFERENCIA_NOME,
+    grupo: 'despesa_variavel',
+    ordem: 999,
+    transferencia: true,
+  })
+  batch.set(contasRef(uid), { itens: CONTAS_SEED, updatedAt: Date.now() })
+  await batch.commit()
+}
+
+export async function criarCategoria(uid: string, categoria: Omit<Categoria, 'id'>) {
+  await addDoc(categoriasCol(uid), categoria)
+}
+
+export async function atualizarCategoria(uid: string, id: string, dados: Partial<Categoria>) {
+  await updateDoc(doc(categoriasCol(uid), id), dados)
+}
+
+export async function removerCategoria(uid: string, id: string) {
+  await deleteDoc(doc(categoriasCol(uid), id))
+}
+
+export async function salvarLancamentos(uid: string, lancamentos: NovoLancamento[]) {
+  const batch = writeBatch(db)
+  for (const l of lancamentos) {
+    const ref = doc(lancamentosCol(uid))
+    batch.set(ref, { ...l, data: Timestamp.fromMillis(l.data), criadoEm: Timestamp.now() })
+  }
+  await batch.commit()
+}
+
+export async function getLancamentos(uid: string, mes: number, ano: number): Promise<Lancamento[]> {
+  const q = query(lancamentosCol(uid), where('mes', '==', mes), where('ano', '==', ano))
+  const snap = await getDocs(q)
+  const lancamentos = snap.docs.map((d) => {
+    const data = d.data()
+    return {
+      id: d.id,
+      conta: data.conta,
+      data: (data.data as Timestamp)?.toMillis?.() ?? data.data,
+      valor: data.valor,
+      descricao: data.descricao,
+      categoriaId: data.categoriaId ?? null,
+      obs: data.obs,
+      mes: data.mes,
+      ano: data.ano,
+      criadoEm: (data.criadoEm as Timestamp)?.toMillis?.() ?? data.criadoEm,
+    } as Lancamento
+  })
+  return lancamentos.sort((a, b) => a.data - b.data)
+}
+
+export async function atualizarLancamento(uid: string, id: string, dados: Partial<Lancamento>) {
+  await updateDoc(doc(lancamentosCol(uid), id), dados)
+}
+
+export async function removerLancamento(uid: string, id: string) {
+  await deleteDoc(doc(lancamentosCol(uid), id))
+}

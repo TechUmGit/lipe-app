@@ -7,6 +7,10 @@ import { TreinoHomePage } from './modules/treino/pages/TreinoHomePage'
 import { SeriePage } from './modules/treino/pages/SeriePage'
 import { ConfiguracoesPage } from './modules/treino/pages/ConfiguracoesPage'
 import { ExecucaoPage } from './modules/treino/pages/ExecucaoPage'
+import { FinancasLayout } from './modules/financas/FinancasLayout'
+import { ExtratoListPage } from './modules/financas/pages/ExtratoListPage'
+import { ImportarExtratoPage } from './modules/financas/pages/ImportarExtratoPage'
+import { CategoriasPage } from './modules/financas/pages/CategoriasPage'
 
 function App() {
   return (
@@ -43,6 +47,19 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+      <Route
+        path="/financas"
+        element={
+          <ProtectedRoute>
+            <FinancasLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<ExtratoListPage />} />
+        <Route path="importar" element={<ImportarExtratoPage />} />
+        <Route path="categorias" element={<CategoriasPage />} />
+      </Route>
     </Routes>
   )
 }
