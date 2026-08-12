@@ -32,7 +32,13 @@ export function LoginPage() {
     <div className="center-screen">
       <form className="stack" style={{ width: '100%', maxWidth: 340 }} onSubmit={handleSubmit}>
         <div className="text-center" style={{ marginBottom: 8 }}>
-          <h1>Lipe</h1>
+          <img
+            src={`${import.meta.env.BASE_URL}icon-512.png`}
+            alt="Lipe"
+            width={96}
+            height={96}
+            style={{ borderRadius: 22, margin: '0 auto 12px' }}
+          />
           <p className="text-dim text-sm">Ecossistema pessoal</p>
         </div>
 
