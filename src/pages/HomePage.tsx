@@ -23,12 +23,19 @@ const apps: AppEntry[] = [
     description: 'Em breve.',
     disabled: true,
   },
+  {
+    to: '/financas',
+    emoji: '💰',
+    title: 'Controle financeiro pessoal',
+    description: 'Em breve.',
+    disabled: true,
+  },
 ]
 
 export function HomePage() {
   return (
     <>
-      <Topbar title="Lipe" />
+      <Topbar title="Meus Aplicativos" />
       <div className="page">
         <div className="stack">
           {apps.map((app) =>
