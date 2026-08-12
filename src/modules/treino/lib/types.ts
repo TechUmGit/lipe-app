@@ -63,6 +63,8 @@ export interface Exercicio {
   repeticoes: string
   carga?: string
   observacao?: string
+  imagemUrl?: string
+  videoUrl?: string
 }
 
 export interface Serie {

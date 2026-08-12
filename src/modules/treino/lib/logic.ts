@@ -1,4 +1,10 @@
-import { GRUPOS, type Execucao, type GrupoTreino, type Serie } from './types'
+import { GRUPOS, type Exercicio, type Execucao, type GrupoTreino, type Serie } from './types'
+
+export function linkVideoExercicio(exercicio: Exercicio): string {
+  if (exercicio.videoUrl) return exercicio.videoUrl
+  const busca = encodeURIComponent(`${exercicio.nome} como fazer execução correta`)
+  return `https://www.youtube.com/results?search_query=${busca}`
+}
 
 const ORDEM: GrupoTreino[] = GRUPOS.map((g) => g.id)
 

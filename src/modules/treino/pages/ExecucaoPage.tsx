@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../../core/AuthContext'
+import { ExercicioItem } from '../components/ExercicioItem'
 import { registrarExecucao, getSerieAtiva } from '../lib/treinoApi'
 import { GRUPOS, type Exercicio, type GrupoTreino, type Serie } from '../lib/types'
 
@@ -74,29 +75,7 @@ export function ExecucaoPage() {
                   🔥 Abdominal e Lombar
                 </p>
               )}
-              <label
-                className="card row-between"
-                style={{ cursor: 'pointer', opacity: feitos.has(i) ? 0.55 : 1 }}
-              >
-                <div className="row" style={{ gap: 12 }}>
-                  <input
-                    type="checkbox"
-                    checked={feitos.has(i)}
-                    onChange={() => toggle(i)}
-                    style={{ width: 20, height: 20 }}
-                  />
-                  <div>
-                    <p style={{ textDecoration: feitos.has(i) ? 'line-through' : 'none' }}>
-                      {ex.nome}
-                    </p>
-                    {ex.observacao && <p className="text-dim text-sm">{ex.observacao}</p>}
-                  </div>
-                </div>
-                <span className="text-dim text-sm">
-                  {ex.series}x{ex.repeticoes}
-                  {ex.carga ? ` · ${ex.carga}` : ''}
-                </span>
-              </label>
+              <ExercicioItem exercicio={ex} checked={feitos.has(i)} onToggle={() => toggle(i)} />
             </div>
           ))}
         </div>

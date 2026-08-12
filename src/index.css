@@ -12,6 +12,9 @@
   --accent-dim: rgba(249, 115, 22, 0.12);
   --danger: #dc2626;
   --success: #16a34a;
+  --btn-bg: #e7e1d3;
+  --btn-border: #d8cfba;
+  --btn-text: #3f3a30;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 
@@ -104,9 +107,9 @@ label {
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-text);
+  background: var(--btn-bg);
+  border-color: var(--btn-border);
+  color: var(--btn-text);
 }
 
 .btn-block { width: 100%; }
@@ -174,6 +177,38 @@ label {
 .text-dim { color: var(--text-dim); }
 .text-sm { font-size: 13px; }
 .text-center { text-align: center; }
+
+.exercise-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  display: block;
+}
+
+.exercise-thumb-placeholder {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 28px;
+}
+
+.video-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--accent-strong);
+  font-weight: 600;
+}
 
 .page {
   flex: 1;

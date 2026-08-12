@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
+import { ExercicioItem } from '../components/ExercicioItem'
 import { criarSerie, getEquipamentos, getPerfil, getSerieAtiva } from '../lib/treinoApi'
 import { GRUPOS, type NovaSerie, type Perfil, type Serie } from '../lib/types'
 
 const EXEMPLO_JSON = `{
   "grupos": {
     "peito_ombro_triceps": [
-      { "nome": "Supino reto com halteres", "series": 4, "repeticoes": "10-12" },
+      {
+        "nome": "Supino reto com halteres",
+        "series": 4,
+        "repeticoes": "10-12",
+        "imagemUrl": "https://strengthlevel.com/exercises/images/exercises/dumbbell-bench-press-800.jpg",
+        "videoUrl": "https://www.youtube.com/watch?v=VmB1G1K7v94"
+      },
       { "nome": "Desenvolvimento com halteres", "series": 3, "repeticoes": "10-12" },
       { "nome": "Tríceps corda", "series": 3, "repeticoes": "12-15" }
     ],
@@ -32,6 +39,12 @@ function montarPrompt(equipamentos: string[], perfil: Perfil) {
 
 Equipamentos disponíveis: ${equipamentos.length ? equipamentos.join(', ') : '(nenhum informado)'}
 Meu perfil: ${JSON.stringify(perfil)}
+
+Para cada exercício, se você tiver certeza de um link real e funcional, inclua também:
+- "imagemUrl": um link direto de imagem (ex: de strengthlevel.com ou musclewiki.com) mostrando a execução do exercício
+- "videoUrl": um link de vídeo do YouTube explicando a execução
+
+Se não tiver certeza de um link real, pode omitir esses dois campos — o app gera automaticamente uma busca no YouTube para os exercícios sem link.
 
 Responda APENAS com um JSON no seguinte formato, sem texto adicional:
 ${EXEMPLO_JSON}`
@@ -121,33 +134,23 @@ export function SeriePage() {
           </div>
 
           {GRUPOS.map((g) => (
-            <div key={g.id} className="card stack">
+            <div key={g.id} className="stack">
               <h3>
                 {g.emoji} {g.label}
               </h3>
-              <div className="stack" style={{ gap: 6 }}>
+              <div className="stack" style={{ gap: 8 }}>
                 {serieAtiva.grupos[g.id]?.map((ex, i) => (
-                  <div key={i} className="row-between text-sm">
-                    <span>{ex.nome}</span>
-                    <span className="text-dim">
-                      {ex.series}x{ex.repeticoes}
-                    </span>
-                  </div>
+                  <ExercicioItem key={i} exercicio={ex} />
                 ))}
               </div>
             </div>
           ))}
 
-          <div className="card stack">
+          <div className="stack">
             <h3>🔥 Abdominal e Lombar</h3>
-            <div className="stack" style={{ gap: 6 }}>
+            <div className="stack" style={{ gap: 8 }}>
               {serieAtiva.abdominalLombar.map((ex, i) => (
-                <div key={i} className="row-between text-sm">
-                  <span>{ex.nome}</span>
-                  <span className="text-dim">
-                    {ex.series}x{ex.repeticoes}
-                  </span>
-                </div>
+                <ExercicioItem key={i} exercicio={ex} />
               ))}
             </div>
           </div>
