@@ -11,7 +11,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { db } from '../../../core/firebase'
-import type { Execucao, GrupoTreino, NovaSerie, Perfil, Serie } from './types'
+import type { Exercicio, Execucao, GrupoTreino, NovaSerie, Perfil, Serie } from './types'
 
 function perfilRef(uid: string) {
   return doc(db, 'users', uid, 'treino', 'perfil')
@@ -75,6 +75,23 @@ export async function criarSerie(uid: string, nova: NovaSerie): Promise<string> 
     criadaEm: Timestamp.now(),
   })
   return docRef.id
+}
+
+export async function atualizarExerciciosGrupo(
+  uid: string,
+  serieId: string,
+  grupo: GrupoTreino,
+  exercicios: Exercicio[],
+) {
+  await updateDoc(doc(seriesCol(uid), serieId), { [`grupos.${grupo}`]: exercicios })
+}
+
+export async function atualizarAbdominalLombar(
+  uid: string,
+  serieId: string,
+  exercicios: Exercicio[],
+) {
+  await updateDoc(doc(seriesCol(uid), serieId), { abdominalLombar: exercicios })
 }
 
 export async function getExecucoesDaSerie(uid: string, serieId: string): Promise<Execucao[]> {

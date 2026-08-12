@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { ExercicioItem } from '../components/ExercicioItem'
-import { criarSerie, getEquipamentos, getPerfil, getSerieAtiva } from '../lib/treinoApi'
-import { GRUPOS, type NovaSerie, type Perfil, type Serie } from '../lib/types'
+import {
+  atualizarAbdominalLombar,
+  atualizarExerciciosGrupo,
+  criarSerie,
+  getEquipamentos,
+  getPerfil,
+  getSerieAtiva,
+} from '../lib/treinoApi'
+import { GRUPOS, type GrupoTreino, type NovaSerie, type Perfil, type Serie } from '../lib/types'
 
 const EXEMPLO_JSON = `{
   "grupos": {
@@ -120,6 +127,20 @@ export function SeriePage() {
     }
   }
 
+  async function atualizarCargaGrupo(grupo: GrupoTreino, index: number, carga: string) {
+    if (!user || !serieAtiva) return
+    const exercicios = serieAtiva.grupos[grupo].map((ex, i) => (i === index ? { ...ex, carga } : ex))
+    setSerieAtiva({ ...serieAtiva, grupos: { ...serieAtiva.grupos, [grupo]: exercicios } })
+    await atualizarExerciciosGrupo(user.uid, serieAtiva.id, grupo, exercicios)
+  }
+
+  async function atualizarCargaAbdominalLombar(index: number, carga: string) {
+    if (!user || !serieAtiva) return
+    const exercicios = serieAtiva.abdominalLombar.map((ex, i) => (i === index ? { ...ex, carga } : ex))
+    setSerieAtiva({ ...serieAtiva, abdominalLombar: exercicios })
+    await atualizarAbdominalLombar(user.uid, serieAtiva.id, exercicios)
+  }
+
   if (loading) return <p className="text-dim">Carregando...</p>
 
   return (
@@ -140,7 +161,11 @@ export function SeriePage() {
               </h3>
               <div className="stack" style={{ gap: 8 }}>
                 {serieAtiva.grupos[g.id]?.map((ex, i) => (
-                  <ExercicioItem key={i} exercicio={ex} />
+                  <ExercicioItem
+                    key={i}
+                    exercicio={ex}
+                    onCargaChange={(carga) => atualizarCargaGrupo(g.id, i, carga)}
+                  />
                 ))}
               </div>
             </div>
@@ -150,7 +175,11 @@ export function SeriePage() {
             <h3>🔥 Abdominal e Lombar</h3>
             <div className="stack" style={{ gap: 8 }}>
               {serieAtiva.abdominalLombar.map((ex, i) => (
-                <ExercicioItem key={i} exercicio={ex} />
+                <ExercicioItem
+                  key={i}
+                  exercicio={ex}
+                  onCargaChange={(carga) => atualizarCargaAbdominalLombar(i, carga)}
+                />
               ))}
             </div>
           </div>

@@ -27,10 +27,12 @@ export function ExercicioItem({
   exercicio,
   checked,
   onToggle,
+  onCargaChange,
 }: {
   exercicio: Exercicio
   checked?: boolean
   onToggle?: () => void
+  onCargaChange?: (carga: string) => void
 }) {
   const conteudo = (
     <div className="row" style={{ alignItems: 'flex-start', gap: 12 }}>
@@ -40,10 +42,31 @@ export function ExercicioItem({
           <p style={{ textDecoration: checked ? 'line-through' : 'none' }}>{exercicio.nome}</p>
           <span className="text-dim text-sm" style={{ whiteSpace: 'nowrap' }}>
             {exercicio.series}x{exercicio.repeticoes}
-            {exercicio.carga ? ` · ${exercicio.carga}` : ''}
           </span>
         </div>
         {exercicio.observacao && <p className="text-dim text-sm">{exercicio.observacao}</p>}
+        {onCargaChange && (
+          <div
+            className="row"
+            style={{ gap: 6, alignItems: 'center' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="text-dim text-sm">Carga</span>
+            <input
+              key={exercicio.carga ?? ''}
+              type="text"
+              defaultValue={exercicio.carga ?? ''}
+              placeholder="ex: 20kg"
+              inputMode="text"
+              style={{ width: 90, padding: '4px 8px', fontSize: 13 }}
+              onBlur={(e) => onCargaChange(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
+        {!onCargaChange && exercicio.carga && (
+          <p className="text-dim text-sm">Carga: {exercicio.carga}</p>
+        )}
         <a
           href={linkVideoExercicio(exercicio)}
           target="_blank"

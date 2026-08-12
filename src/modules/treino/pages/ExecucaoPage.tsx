@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../../core/AuthContext'
 import { ExercicioItem } from '../components/ExercicioItem'
-import { registrarExecucao, getSerieAtiva } from '../lib/treinoApi'
+import {
+  atualizarAbdominalLombar,
+  atualizarExerciciosGrupo,
+  registrarExecucao,
+  getSerieAtiva,
+} from '../lib/treinoApi'
 import { GRUPOS, type Exercicio, type GrupoTreino, type Serie } from '../lib/types'
 
 export function ExecucaoPage() {
@@ -48,6 +53,20 @@ export function ExecucaoPage() {
     })
   }
 
+  async function atualizarCarga(i: number, carga: string) {
+    if (!user || !serie || !grupo) return
+    if (i < totalPrincipais) {
+      const exercicios = serie.grupos[grupo].map((ex, idx) => (idx === i ? { ...ex, carga } : ex))
+      setSerie({ ...serie, grupos: { ...serie.grupos, [grupo]: exercicios } })
+      await atualizarExerciciosGrupo(user.uid, serie.id, grupo, exercicios)
+    } else {
+      const idx = i - totalPrincipais
+      const exercicios = serie.abdominalLombar.map((ex, j) => (j === idx ? { ...ex, carga } : ex))
+      setSerie({ ...serie, abdominalLombar: exercicios })
+      await atualizarAbdominalLombar(user.uid, serie.id, exercicios)
+    }
+  }
+
   async function concluirTreino() {
     if (!user || !serie || !grupo) return
     setConcluindo(true)
@@ -75,7 +94,12 @@ export function ExecucaoPage() {
                   🔥 Abdominal e Lombar
                 </p>
               )}
-              <ExercicioItem exercicio={ex} checked={feitos.has(i)} onToggle={() => toggle(i)} />
+              <ExercicioItem
+                exercicio={ex}
+                checked={feitos.has(i)}
+                onToggle={() => toggle(i)}
+                onCargaChange={(carga) => atualizarCarga(i, carga)}
+              />
             </div>
           ))}
         </div>
