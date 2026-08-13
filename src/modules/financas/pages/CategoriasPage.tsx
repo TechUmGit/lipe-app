@@ -10,8 +10,8 @@ import {
   removerCategoria,
   salvarContas,
 } from '../lib/financasApi'
-import { taxaVigente } from '../lib/taxas'
-import { GRUPOS_CATEGORIA, type Categoria, type GrupoCategoria, type TaxaResponsabilidade } from '../lib/types'
+import { orcamentoVigente, taxaVigente } from '../lib/taxas'
+import { GRUPOS_CATEGORIA, type Categoria, type GrupoCategoria, type OrcamentoMensal, type TaxaResponsabilidade } from '../lib/types'
 
 export function CategoriasPage() {
   const { user } = useAuth()
@@ -74,7 +74,7 @@ export function CategoriasPage() {
     await salvarContas(user.uid, novas)
   }
 
-  async function salvarTaxas(dados: { taxas: TaxaResponsabilidade[]; orcamentoMensal: number }) {
+  async function salvarTaxas(dados: { taxas: TaxaResponsabilidade[]; orcamentos: OrcamentoMensal[] }) {
     if (!user || !editandoTaxa) return
     await atualizarCategoria(user.uid, editandoTaxa.id, dados)
     setCategorias((prev) => prev.map((c) => (c.id === editandoTaxa.id ? { ...c, ...dados } : c)))
@@ -93,8 +93,8 @@ export function CategoriasPage() {
       ) : (
       <>
       <p className="text-dim text-sm">
-        Toque numa categoria para ajustar sua taxa de responsabilidade (0-100%) e a partir de
-        quando ela vale.
+        Toque numa categoria para ajustar sua taxa de responsabilidade e seu orçamento mensal,
+        cada um com histórico de vigência.
       </p>
       <section className="stack">
         <h2>Contas</h2>
@@ -139,7 +139,8 @@ export function CategoriasPage() {
                   <span className="text-sm">{c.nome}</span>
                   <div className="row" style={{ gap: 10 }}>
                     <span className="text-dim text-sm">
-                      {taxaVigente(c)}%{c.orcamentoMensal ? ` · ${formatarMoeda(c.orcamentoMensal)}` : ''}
+                      {taxaVigente(c)}%
+                      {orcamentoVigente(c) ? ` · ${formatarMoeda(orcamentoVigente(c))}` : ''}
                     </span>
                     <button
                       type="button"

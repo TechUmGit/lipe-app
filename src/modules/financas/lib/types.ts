@@ -18,6 +18,11 @@ export interface TaxaResponsabilidade {
   vigenciaDesde: number
 }
 
+export interface OrcamentoMensal {
+  valor: number
+  vigenciaDesde: number
+}
+
 export interface Categoria {
   id: string
   nome: string
@@ -25,7 +30,9 @@ export interface Categoria {
   ordem: number
   transferencia?: boolean
   taxas?: TaxaResponsabilidade[]
+  /** @deprecated valor único sem vigência, mantido só para migrar categorias antigas — usar `orcamentos` */
   orcamentoMensal?: number
+  orcamentos?: OrcamentoMensal[]
 }
 
 export interface Lancamento {

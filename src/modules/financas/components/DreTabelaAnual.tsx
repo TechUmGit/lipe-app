@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { getCategorias, getDreAnotacoesPorAno, getLancamentosPorAno, salvarDreAnotacao } from '../lib/financasApi'
-import { valorResponsavel } from '../lib/taxas'
+import { orcamentoVigente, valorResponsavel } from '../lib/taxas'
 import { GRUPOS_CATEGORIA, type Categoria, type DreAnotacao, type DreCor, type Lancamento } from '../lib/types'
 import { DreCelulaModal } from './DreCelulaModal'
 
@@ -78,7 +78,7 @@ export function DreTabelaAnual() {
             meses,
             totalAno,
             mediaMensal: totalAno / divisor,
-            orcamentoMensal: c.orcamentoMensal ?? 0,
+            orcamentoMensal: orcamentoVigente(c),
           }
         })
         .filter((l) => l.totalAno !== 0 || l.orcamentoMensal !== 0)
