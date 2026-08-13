@@ -12,9 +12,9 @@
   --accent-dim: rgba(109, 77, 230, 0.1);
   --danger: #dc2626;
   --success: #17a673;
-  --btn-bg: var(--accent);
-  --btn-border: var(--accent);
-  --btn-text: #ffffff;
+  --btn-bg: #ffdea4;
+  --btn-border: #ffdea4;
+  --btn-text: var(--text);
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 
@@ -71,6 +71,7 @@ input, select, textarea {
   border-radius: 10px;
   padding: 10px 12px;
   width: 100%;
+  font-size: 16px;
 }
 
 input:focus, select:focus, textarea:focus {
