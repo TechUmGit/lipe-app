@@ -1,13 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
+import { MonthSwitcher } from '../components/MonthSwitcher'
 import { getCategorias, getLancamentos } from '../lib/financasApi'
 import { valorResponsavel } from '../lib/taxas'
 import { GRUPOS_CATEGORIA, type Categoria, type Lancamento } from '../lib/types'
-
-const MESES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-]
 
 function formatarMoeda(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -18,7 +14,6 @@ export function DREPage() {
   const hoje = new Date()
   const [mes, setMes] = useState(hoje.getMonth() + 1)
   const [ano, setAno] = useState(hoje.getFullYear())
-  const [anoTexto, setAnoTexto] = useState(String(hoje.getFullYear()))
   const [loading, setLoading] = useState(true)
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -61,31 +56,14 @@ export function DREPage() {
 
   return (
     <div className="stack">
-      <div className="row">
-        <label style={{ flex: 1 }}>
-          Mês
-          <select value={mes} onChange={(e) => setMes(Number(e.target.value))}>
-            {MESES.map((m, i) => (
-              <option key={i} value={i + 1}>
-                {m}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label style={{ flex: 1 }}>
-          Ano
-          <input
-            type="number"
-            value={anoTexto}
-            onChange={(e) => setAnoTexto(e.target.value)}
-            onBlur={() => {
-              const n = Number(anoTexto)
-              if (n) setAno(n)
-              else setAnoTexto(String(ano))
-            }}
-          />
-        </label>
-      </div>
+      <MonthSwitcher
+        mes={mes}
+        ano={ano}
+        onChange={(m, a) => {
+          setMes(m)
+          setAno(a)
+        }}
+      />
 
       <div className="alert">
         Por enquanto essa DRE mostra só o realizado. Comparação com orçado e comentários por linha
