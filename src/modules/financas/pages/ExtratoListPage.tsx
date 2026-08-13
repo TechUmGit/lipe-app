@@ -198,7 +198,7 @@ export function ExtratoListPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p className="lancamento-title">{l.descricao}</p>
                         <p className="text-dim text-sm">
-                          {l.conta} · {cat ? cat.nome : 'Sem categoria'}
+                          {l.conta} · {cat ? cat.nome : 'Verificar'}
                         </p>
                       </div>
                       <span
