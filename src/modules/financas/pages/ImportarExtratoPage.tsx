@@ -1,34 +1,29 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../core/AuthContext'
-import { detectarColunas, parseCsv, parseData, parseValor } from '../lib/csv'
+import { gerarTemplate, lerTemplate, type LinhaTemplate } from '../lib/excelTemplate'
 import { getCategorias, getContas, salvarLancamentos } from '../lib/financasApi'
 import { GRUPOS_CATEGORIA, type Categoria, type NovoLancamento } from '../lib/types'
 
-interface LinhaParseada {
-  data: number | null
-  dataTexto: string
-  valor: number
-  descricao: string
+interface LinhaRevisao extends LinhaTemplate {
+  categoriaId: string | null
+}
+
+function normalizar(s: string) {
+  return s.trim().toLowerCase()
 }
 
 export function ImportarExtratoPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [contas, setContas] = useState<string[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
-  const [conta, setConta] = useState('')
 
-  const [textoCsv, setTextoCsv] = useState('')
-  const [headers, setHeaders] = useState<string[]>([])
-  const [linhasBrutas, setLinhasBrutas] = useState<string[][]>([])
-  const [colData, setColData] = useState(-1)
-  const [colValor, setColValor] = useState(-1)
-  const [colDescricao, setColDescricao] = useState(-1)
-
-  const [categoriaPorLinha, setCategoriaPorLinha] = useState<Record<number, string>>({})
-  const [obsPorLinha, setObsPorLinha] = useState<Record<number, string>>({})
+  const [linhas, setLinhas] = useState<LinhaRevisao[] | null>(null)
+  const [baixando, setBaixando] = useState(false)
+  const [lendo, setLendo] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
@@ -37,67 +32,89 @@ export function ImportarExtratoPage() {
     Promise.all([getContas(user.uid), getCategorias(user.uid)]).then(([c, cat]) => {
       setContas(c)
       setCategorias(cat)
-      if (c.length) setConta(c[0])
     })
   }, [user])
 
-  function processarCsv() {
-    setErro(null)
-    const linhas = parseCsv(textoCsv)
-    if (linhas.length < 2) {
-      setErro('Não consegui identificar linhas suficientes nesse CSV.')
-      return
-    }
-    const [head, ...resto] = linhas
-    const mapa = detectarColunas(head)
-    setHeaders(head)
-    setLinhasBrutas(resto)
-    setColData(mapa.data)
-    setColValor(mapa.valor)
-    setColDescricao(mapa.descricao)
-    setCategoriaPorLinha({})
-    setObsPorLinha({})
-  }
-
-  const linhasParseadas: LinhaParseada[] = useMemo(() => {
-    if (colData < 0 || colValor < 0 || colDescricao < 0) return []
-    return linhasBrutas.map((linha) => {
-      const dataTexto = linha[colData] ?? ''
-      return {
-        data: parseData(dataTexto),
-        dataTexto,
-        valor: parseValor(linha[colValor] ?? '0'),
-        descricao: (linha[colDescricao] ?? '').trim(),
-      }
-    })
-  }, [linhasBrutas, colData, colValor, colDescricao])
+  const categoriasPorNomeNormalizado = useMemo(() => {
+    const map = new Map<string, Categoria>()
+    for (const c of categorias) map.set(normalizar(c.nome), c)
+    return map
+  }, [categorias])
 
   const categoriasOrdenadas = useMemo(
     () => GRUPOS_CATEGORIA.map((g) => ({ ...g, itens: categorias.filter((c) => c.grupo === g.id) })),
     [categorias],
   )
 
-  const prontoParaMapear = headers.length > 0
-  const colunasValidas = colData >= 0 && colValor >= 0 && colDescricao >= 0
+  async function baixarModelo() {
+    if (!user) return
+    setBaixando(true)
+    try {
+      const blob = await gerarTemplate(contas, categorias)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'modelo-extrato-lipe.xlsx'
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setBaixando(false)
+    }
+  }
+
+  async function selecionarArquivo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setErro(null)
+    setLendo(true)
+    try {
+      const linhasLidas = await lerTemplate(file)
+      const revisao: LinhaRevisao[] = linhasLidas.map((l) => {
+        const cat = categoriasPorNomeNormalizado.get(normalizar(l.categoriaNome))
+        return { ...l, categoriaId: cat?.id ?? null }
+      })
+      setLinhas(revisao)
+    } catch (err) {
+      console.error(err)
+      setErro('Não consegui ler esse arquivo. Confira se é o modelo baixado pelo app.')
+    } finally {
+      setLendo(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  function mudarCategoria(i: number, categoriaId: string) {
+    setLinhas((prev) => prev?.map((l, idx) => (idx === i ? { ...l, categoriaId } : l)) ?? null)
+  }
+
+  function mudarObs(i: number, obs: string) {
+    setLinhas((prev) => prev?.map((l, idx) => (idx === i ? { ...l, obs } : l)) ?? null)
+  }
 
   async function salvar() {
-    if (!user || !conta) return
+    if (!user || !linhas) return
     setErro(null)
-    const semData = linhasParseadas.some((l) => l.data === null)
+
+    const semData = linhas.some((l) => l.data === null)
     if (semData) {
-      setErro('Algumas linhas têm data em formato não reconhecido. Confira a coluna de data.')
+      setErro('Algumas linhas têm data vazia ou inválida. Confira a planilha.')
+      return
+    }
+    const semConta = linhas.some((l) => !l.conta.trim())
+    if (semConta) {
+      setErro('Algumas linhas estão sem conta preenchida.')
       return
     }
 
-    const lancamentos: NovoLancamento[] = linhasParseadas.map((l, i) => {
+    const lancamentos: NovoLancamento[] = linhas.map((l) => {
       const d = new Date(l.data as number)
       return {
-        conta,
+        conta: l.conta,
         data: l.data as number,
         valor: l.valor,
         descricao: l.descricao,
-        categoriaId: categoriaPorLinha[i] ?? null,
-        obs: obsPorLinha[i] ?? '',
+        categoriaId: l.categoriaId,
+        obs: l.obs,
         mes: d.getMonth() + 1,
         ano: d.getFullYear(),
       }
@@ -119,85 +136,45 @@ export function ImportarExtratoPage() {
     <div className="stack">
       <h2>Importar extrato</h2>
 
-      <label>
-        Conta
-        <select value={conta} onChange={(e) => setConta(e.target.value)}>
-          {contas.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="card stack">
+        <h3>1. Baixe o modelo</h3>
+        <p className="text-dim text-sm">
+          Preencha no computador, com Conta e Categoria escolhidas na lista suspensa de cada
+          célula. Sempre que suas contas ou categorias mudarem, baixe um modelo novo.
+        </p>
+        <button type="button" className="btn" onClick={baixarModelo} disabled={baixando}>
+          {baixando ? 'Gerando...' : '⬇️ Baixar modelo (.xlsx)'}
+        </button>
+      </div>
 
-      <label>
-        Cole aqui o CSV exportado do banco
-        <textarea
-          rows={8}
-          value={textoCsv}
-          onChange={(e) => setTextoCsv(e.target.value)}
-          placeholder="Data,Valor,Descrição&#10;01/01/2026,-97.91,Pix enviado..."
+      <div className="card stack">
+        <h3>2. Envie o arquivo preenchido</h3>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx"
+          onChange={selecionarArquivo}
+          disabled={lendo}
         />
-      </label>
+        {lendo && <p className="text-dim text-sm">Lendo arquivo...</p>}
+      </div>
 
-      <button type="button" className="btn btn-primary" onClick={processarCsv} disabled={!textoCsv.trim()}>
-        Analisar CSV
-      </button>
+      {erro && <p className="error-text">{erro}</p>}
 
-      {prontoParaMapear && (
-        <div className="stack card">
-          <h3>Confirme as colunas</h3>
-          <p className="text-dim text-sm">
-            {linhasBrutas.length} linha(s) encontrada(s). Confira se identifiquei as colunas certas.
-          </p>
-
-          <div className="row">
-            <label style={{ flex: 1 }}>
-              Data
-              <select value={colData} onChange={(e) => setColData(Number(e.target.value))}>
-                <option value={-1}>Selecione...</option>
-                {headers.map((h, i) => (
-                  <option key={i} value={i}>
-                    {h || `Coluna ${i + 1}`}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label style={{ flex: 1 }}>
-              Valor
-              <select value={colValor} onChange={(e) => setColValor(Number(e.target.value))}>
-                <option value={-1}>Selecione...</option>
-                {headers.map((h, i) => (
-                  <option key={i} value={i}>
-                    {h || `Coluna ${i + 1}`}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label style={{ flex: 1 }}>
-              Descrição
-              <select value={colDescricao} onChange={(e) => setColDescricao(Number(e.target.value))}>
-                <option value={-1}>Selecione...</option>
-                {headers.map((h, i) => (
-                  <option key={i} value={i}>
-                    {h || `Coluna ${i + 1}`}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </div>
+      {linhas && linhas.length === 0 && (
+        <p className="text-dim text-center">Não encontrei nenhuma linha preenchida nesse arquivo.</p>
       )}
 
-      {colunasValidas && linhasParseadas.length > 0 && (
+      {linhas && linhas.length > 0 && (
         <div className="stack">
-          <h3>Categorize cada lançamento</h3>
+          <h3>3. Confira e salve</h3>
           <div className="stack" style={{ gap: 8 }}>
-            {linhasParseadas.map((l, i) => (
+            {linhas.map((l, i) => (
               <div key={i} className="card stack" style={{ gap: 6 }}>
                 <div className="row-between">
-                  <span className="text-sm">
-                    {l.data ? new Date(l.data).toLocaleDateString('pt-BR') : '⚠️ data inválida'}
+                  <span className="text-sm text-dim">
+                    {l.data ? new Date(l.data).toLocaleDateString('pt-BR') : '⚠️ data inválida'} ·{' '}
+                    {l.conta || '⚠️ sem conta'}
                   </span>
                   <span
                     className="text-sm"
@@ -209,12 +186,7 @@ export function ImportarExtratoPage() {
                 <p className="text-sm" style={{ overflowWrap: 'break-word' }}>
                   {l.descricao}
                 </p>
-                <select
-                  value={categoriaPorLinha[i] ?? ''}
-                  onChange={(e) =>
-                    setCategoriaPorLinha((prev) => ({ ...prev, [i]: e.target.value }))
-                  }
-                >
+                <select value={l.categoriaId ?? ''} onChange={(e) => mudarCategoria(i, e.target.value)}>
                   <option value="">Sem categoria</option>
                   {categoriasOrdenadas.map((g) =>
                     g.itens.length ? (
@@ -231,17 +203,15 @@ export function ImportarExtratoPage() {
                 </select>
                 <input
                   placeholder="Comentário (opcional)"
-                  value={obsPorLinha[i] ?? ''}
-                  onChange={(e) => setObsPorLinha((prev) => ({ ...prev, [i]: e.target.value }))}
+                  value={l.obs}
+                  onChange={(e) => mudarObs(i, e.target.value)}
                 />
               </div>
             ))}
           </div>
 
-          {erro && <p className="error-text">{erro}</p>}
-
           <button className="btn btn-primary btn-block" onClick={salvar} disabled={salvando}>
-            {salvando ? 'Salvando...' : `Salvar ${linhasParseadas.length} lançamento(s)`}
+            {salvando ? 'Salvando...' : `Salvar ${linhas.length} lançamento(s)`}
           </button>
         </div>
       )}
