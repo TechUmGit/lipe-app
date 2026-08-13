@@ -35,11 +35,10 @@ export function LoginPage() {
           <img
             src={`${import.meta.env.BASE_URL}icon-512.png`}
             alt="Lipe"
-            width={96}
-            height={96}
+            width={240}
+            height={240}
             style={{ borderRadius: 22, margin: '0 auto 12px' }}
           />
-          <p className="text-dim text-sm">Ecossistema pessoal</p>
         </div>
 
         <label>
