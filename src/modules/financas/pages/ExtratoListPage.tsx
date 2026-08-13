@@ -54,8 +54,14 @@ export function ExtratoListPage() {
     let despesa = 0
     for (const l of lancamentos) {
       const cat = l.categoriaId ? categoriasPorId.get(l.categoriaId) : undefined
-      if (cat?.transferencia) continue
-      if (l.valor >= 0) receita += l.valor
+      if (cat?.transferencia || cat?.grupo === 'bens') continue
+      if (!cat) {
+        // sem categoria: melhor estimativa é o sinal do valor
+        if (l.valor >= 0) receita += l.valor
+        else despesa += l.valor
+        continue
+      }
+      if (cat.grupo === 'receita') receita += l.valor
       else despesa += l.valor
     }
     return { receita, despesa, saldo: receita + despesa }

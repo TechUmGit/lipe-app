@@ -1,20 +1,20 @@
 :root {
-  --bg: #fbf6ee;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-2: #fdf1de;
-  --border: #ecdfc7;
-  --text: #4a4235;
-  --text-dim: #948a76;
-  --accent: #f97316;
-  --accent-2: #eab308;
-  --accent-strong: #c2410c;
-  --accent-text: #431407;
-  --accent-dim: rgba(249, 115, 22, 0.12);
+  --surface-2: #f5f4fb;
+  --border: #e7e6f0;
+  --text: #16151f;
+  --text-dim: #6f6d82;
+  --accent: #6d4de6;
+  --accent-2: #8f74ef;
+  --accent-strong: #5732d6;
+  --accent-text: #ffffff;
+  --accent-dim: rgba(109, 77, 230, 0.1);
   --danger: #dc2626;
-  --success: #16a34a;
-  --btn-bg: #e7e1d3;
-  --btn-border: #d8cfba;
-  --btn-text: #3f3a30;
+  --success: #17a673;
+  --btn-bg: var(--accent);
+  --btn-border: var(--accent);
+  --btn-text: #ffffff;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 
@@ -102,7 +102,7 @@ label {
   transition: filter 0.15s ease, transform 0.05s ease;
 }
 
-.btn:hover { filter: brightness(1.15); }
+.btn:hover { filter: brightness(1.08); }
 .btn:active { transform: scale(0.98); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -111,6 +111,8 @@ label {
   border-color: var(--btn-border);
   color: var(--btn-text);
 }
+
+.btn-primary:hover { filter: brightness(1.1); }
 
 .btn-block { width: 100%; }
 
@@ -126,7 +128,7 @@ label {
   border-radius: 16px;
   padding: 18px;
   text-align: left;
-  box-shadow: 0 1px 3px rgba(148, 106, 39, 0.08);
+  box-shadow: 0 1px 2px rgba(22, 21, 31, 0.04);
 }
 
 .stack {
@@ -273,7 +275,7 @@ label {
 .alert {
   border: 1px solid var(--accent);
   background: var(--accent-dim);
-  color: var(--accent-text);
+  color: var(--accent-strong);
   border-radius: 12px;
   padding: 12px 14px;
   font-size: 14px;
