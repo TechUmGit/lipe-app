@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { Topbar } from '../../../shared/components/Topbar'
+import { TaxaModal } from '../components/TaxaModal'
 import {
+  atualizarCategoria,
   criarCategoria,
   getCategorias,
   getContas,
   removerCategoria,
   salvarContas,
 } from '../lib/financasApi'
-import { GRUPOS_CATEGORIA, type Categoria, type GrupoCategoria } from '../lib/types'
+import { taxaVigente } from '../lib/taxas'
+import { GRUPOS_CATEGORIA, type Categoria, type GrupoCategoria, type TaxaResponsabilidade } from '../lib/types'
 
 export function CategoriasPage() {
   const { user } = useAuth()
@@ -23,6 +26,7 @@ export function CategoriasPage() {
     investimento: '',
     bens: '',
   })
+  const [editandoTaxa, setEditandoTaxa] = useState<Categoria | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -70,6 +74,12 @@ export function CategoriasPage() {
     await salvarContas(user.uid, novas)
   }
 
+  async function salvarTaxas(taxas: TaxaResponsabilidade[]) {
+    if (!user || !editandoTaxa) return
+    await atualizarCategoria(user.uid, editandoTaxa.id, { taxas })
+    setCategorias((prev) => prev.map((c) => (c.id === editandoTaxa.id ? { ...c, taxas } : c)))
+  }
+
   return (
     <>
       <Topbar title="Categorias" backTo="/financas" />
@@ -78,6 +88,10 @@ export function CategoriasPage() {
         <p className="text-dim">Carregando...</p>
       ) : (
       <>
+      <p className="text-dim text-sm">
+        Toque numa categoria para ajustar sua taxa de responsabilidade (0-100%) e a partir de
+        quando ela vale.
+      </p>
       <section className="stack">
         <h2>Contas</h2>
         <div className="chip-grid">
@@ -112,16 +126,27 @@ export function CategoriasPage() {
             {categorias
               .filter((c) => c.grupo === grupo.id && !c.transferencia)
               .map((c) => (
-                <div key={c.id} className="row-between card" style={{ padding: '10px 14px' }}>
+                <div
+                  key={c.id}
+                  className="row-between card"
+                  style={{ padding: '10px 14px', cursor: 'pointer' }}
+                  onClick={() => setEditandoTaxa(c)}
+                >
                   <span className="text-sm">{c.nome}</span>
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    style={{ padding: '4px 8px' }}
-                    onClick={() => excluirCategoria(c.id)}
-                  >
-                    Excluir
-                  </button>
+                  <div className="row" style={{ gap: 10 }}>
+                    <span className="text-dim text-sm">{taxaVigente(c)}%</span>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      style={{ padding: '4px 8px' }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        excluirCategoria(c.id)
+                      }}
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 </div>
               ))}
           </div>
@@ -146,6 +171,14 @@ export function CategoriasPage() {
       </>
       )}
       </div>
+
+      {editandoTaxa && (
+        <TaxaModal
+          categoria={editandoTaxa}
+          onClose={() => setEditandoTaxa(null)}
+          onSave={salvarTaxas}
+        />
+      )}
     </>
   )
 }

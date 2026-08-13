@@ -13,12 +13,18 @@ export const GRUPOS_CATEGORIA: { id: GrupoCategoria; label: string }[] = [
   { id: 'bens', label: 'Bens (patrimônio)' },
 ]
 
+export interface TaxaResponsabilidade {
+  percentual: number
+  vigenciaDesde: number
+}
+
 export interface Categoria {
   id: string
   nome: string
   grupo: GrupoCategoria
   ordem: number
   transferencia?: boolean
+  taxas?: TaxaResponsabilidade[]
 }
 
 export interface Lancamento {
