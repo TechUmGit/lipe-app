@@ -3,6 +3,7 @@ import { useAuth } from '../../../core/AuthContext'
 import { DonutChart } from '../components/DonutChart'
 import { MESES, MonthSwitcher } from '../components/MonthSwitcher'
 import { getCategorias, getLancamentos } from '../lib/financasApi'
+import { valorResponsavel } from '../lib/taxas'
 import type { Categoria, Lancamento } from '../lib/types'
 
 function formatarMoeda(v: number) {
@@ -49,8 +50,9 @@ export function ResumoPage() {
     for (const l of lancamentos) {
       const cat = l.categoriaId ? categoriasPorId.get(l.categoriaId) : undefined
       if (!cat || cat.transferencia || cat.grupo === 'bens') continue
-      const valorAbs = Math.abs(l.valor)
-      if (cat.grupo === 'receita') receita += l.valor
+      const ajustado = valorResponsavel(l, cat)
+      const valorAbs = Math.abs(ajustado)
+      if (cat.grupo === 'receita') receita += ajustado
       else if (cat.grupo === 'despesa_fixa') despesaFixa += valorAbs
       else if (cat.grupo === 'despesa_variavel') despesaVariavel += valorAbs
       else if (cat.grupo === 'investimento') investimento += valorAbs

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { getCategorias, getLancamentos } from '../lib/financasApi'
+import { valorResponsavel } from '../lib/taxas'
 import { GRUPOS_CATEGORIA, type Categoria, type Lancamento } from '../lib/types'
 
 const MESES = [
@@ -17,6 +18,7 @@ export function DREPage() {
   const hoje = new Date()
   const [mes, setMes] = useState(hoje.getMonth() + 1)
   const [ano, setAno] = useState(hoje.getFullYear())
+  const [anoTexto, setAnoTexto] = useState(String(hoje.getFullYear()))
   const [loading, setLoading] = useState(true)
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -32,10 +34,12 @@ export function DREPage() {
   }, [user, mes, ano])
 
   const dre = useMemo(() => {
+    const categoriasPorId = new Map(categorias.map((c) => [c.id, c]))
     const porCategoria = new Map<string, number>()
     for (const l of lancamentos) {
       if (!l.categoriaId) continue
-      porCategoria.set(l.categoriaId, (porCategoria.get(l.categoriaId) ?? 0) + l.valor)
+      const ajustado = valorResponsavel(l, categoriasPorId.get(l.categoriaId))
+      porCategoria.set(l.categoriaId, (porCategoria.get(l.categoriaId) ?? 0) + ajustado)
     }
 
     const grupos = GRUPOS_CATEGORIA.filter((g) => g.id !== 'bens').map((g) => {
@@ -70,7 +74,16 @@ export function DREPage() {
         </label>
         <label style={{ flex: 1 }}>
           Ano
-          <input type="number" value={ano} onChange={(e) => setAno(Number(e.target.value))} />
+          <input
+            type="number"
+            value={anoTexto}
+            onChange={(e) => setAnoTexto(e.target.value)}
+            onBlur={() => {
+              const n = Number(anoTexto)
+              if (n) setAno(n)
+              else setAnoTexto(String(ano))
+            }}
+          />
         </label>
       </div>
 

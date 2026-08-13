@@ -67,8 +67,8 @@ export function SeriePage() {
 
   const [mostrarImportar, setMostrarImportar] = useState(false)
   const [jsonTexto, setJsonTexto] = useState('')
-  const [metaExecucoes, setMetaExecucoes] = useState(24)
-  const [metaDias, setMetaDias] = useState(60)
+  const [metaExecucoesTexto, setMetaExecucoesTexto] = useState('24')
+  const [metaDiasTexto, setMetaDiasTexto] = useState('60')
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [promptCopiado, setPromptCopiado] = useState(false)
@@ -114,8 +114,8 @@ export function SeriePage() {
       await criarSerie(user.uid, {
         grupos: obj.grupos as NovaSerie['grupos'],
         abdominalLombar: obj.abdominalLombar ?? [],
-        metaExecucoes,
-        metaDias,
+        metaExecucoes: Number(metaExecucoesTexto) || 0,
+        metaDias: Number(metaDiasTexto) || 0,
       })
       const nova = await getSerieAtiva(user.uid)
       setSerieAtiva(nova)
@@ -244,16 +244,16 @@ export function SeriePage() {
               Meta de treinos
               <input
                 type="number"
-                value={metaExecucoes}
-                onChange={(e) => setMetaExecucoes(Number(e.target.value))}
+                value={metaExecucoesTexto}
+                onChange={(e) => setMetaExecucoesTexto(e.target.value)}
               />
             </label>
             <label style={{ flex: 1 }}>
               Meta de dias
               <input
                 type="number"
-                value={metaDias}
-                onChange={(e) => setMetaDias(Number(e.target.value))}
+                value={metaDiasTexto}
+                onChange={(e) => setMetaDiasTexto(e.target.value)}
               />
             </label>
           </div>

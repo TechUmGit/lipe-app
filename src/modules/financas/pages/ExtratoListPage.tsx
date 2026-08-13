@@ -12,6 +12,7 @@ import {
   removerLancamento,
   type PaginaLancamentos,
 } from '../lib/financasApi'
+import { valorResponsavel } from '../lib/taxas'
 import type { Categoria, Lancamento } from '../lib/types'
 import type { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore'
 
@@ -25,6 +26,7 @@ export function ExtratoListPage() {
   const { user } = useAuth()
   const [mesFiltro, setMesFiltro] = useState<number | null>(null)
   const [anoFiltro, setAnoFiltro] = useState(ANO_ATUAL)
+  const [anoFiltroTexto, setAnoFiltroTexto] = useState(String(ANO_ATUAL))
 
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -101,8 +103,9 @@ export function ExtratoListPage() {
         else despesa += l.valor
         continue
       }
-      if (cat.grupo === 'receita') receita += l.valor
-      else despesa += l.valor
+      const ajustado = valorResponsavel(l, cat)
+      if (cat.grupo === 'receita') receita += ajustado
+      else despesa += ajustado
     }
     return { receita, despesa, saldo: receita + despesa }
   }, [lancamentos, categoriasPorId])
@@ -145,8 +148,13 @@ export function ExtratoListPage() {
             Ano
             <input
               type="number"
-              value={anoFiltro}
-              onChange={(e) => setAnoFiltro(Number(e.target.value))}
+              value={anoFiltroTexto}
+              onChange={(e) => setAnoFiltroTexto(e.target.value)}
+              onBlur={() => {
+                const n = Number(anoFiltroTexto)
+                if (n) setAnoFiltro(n)
+                else setAnoFiltroTexto(String(anoFiltro))
+              }}
             />
           </label>
         )}

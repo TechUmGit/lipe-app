@@ -1,4 +1,4 @@
-import type { Categoria, TaxaResponsabilidade } from './types'
+import type { Categoria, Lancamento, TaxaResponsabilidade } from './types'
 
 export function taxaVigente(categoria: Pick<Categoria, 'taxas'>, dataMs: number = Date.now()): number {
   const taxas = categoria.taxas ?? []
@@ -15,4 +15,11 @@ export function taxaVigente(categoria: Pick<Categoria, 'taxas'>, dataMs: number 
 
 export function ordenarTaxas(taxas: TaxaResponsabilidade[]): TaxaResponsabilidade[] {
   return [...taxas].sort((a, b) => b.vigenciaDesde - a.vigenciaDesde)
+}
+
+/** Valor do lançamento já ajustado pela taxa de responsabilidade vigente na data dele. */
+export function valorResponsavel(lancamento: Lancamento, categoria: Pick<Categoria, 'taxas'> | undefined): number {
+  if (!categoria) return lancamento.valor
+  const taxa = taxaVigente(categoria, lancamento.data)
+  return (lancamento.valor * taxa) / 100
 }

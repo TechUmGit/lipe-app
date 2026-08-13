@@ -23,12 +23,13 @@ export function TaxaModal({
   onSave: (taxas: TaxaResponsabilidade[]) => void
 }) {
   const [taxas, setTaxas] = useState<TaxaResponsabilidade[]>(categoria.taxas ?? [])
-  const [percentual, setPercentual] = useState(100)
+  const [percentualTexto, setPercentualTexto] = useState('100')
   const [vigenciaDesde, setVigenciaDesde] = useState(paraInputDate(Date.now()))
 
   function adicionar() {
+    const percentual = Math.min(100, Math.max(0, Number(percentualTexto) || 0))
     const nova: TaxaResponsabilidade = {
-      percentual: Math.min(100, Math.max(0, percentual)),
+      percentual,
       vigenciaDesde: deInputDate(vigenciaDesde),
     }
     setTaxas((prev) => [...prev.filter((t) => t.vigenciaDesde !== nova.vigenciaDesde), nova])
@@ -80,8 +81,8 @@ export function TaxaModal({
             type="number"
             min={0}
             max={100}
-            value={percentual}
-            onChange={(e) => setPercentual(Number(e.target.value))}
+            value={percentualTexto}
+            onChange={(e) => setPercentualTexto(e.target.value)}
           />
         </label>
         <label style={{ flex: 1 }}>
