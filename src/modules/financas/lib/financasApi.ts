@@ -5,17 +5,38 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
+  orderBy,
   query,
   runTransaction,
   setDoc,
+  startAfter,
   Timestamp,
   updateDoc,
   where,
   writeBatch,
+  type DocumentData,
+  type QueryDocumentSnapshot,
 } from 'firebase/firestore'
 import { db } from '../../../core/firebase'
 import { CATEGORIAS_SEED, CATEGORIA_TRANSFERENCIA_NOME, CONTAS_SEED } from './categoriasSeed'
 import type { Categoria, Lancamento, NovoLancamento } from './types'
+
+function mapLancamento(d: QueryDocumentSnapshot<DocumentData>): Lancamento {
+  const data = d.data()
+  return {
+    id: d.id,
+    conta: data.conta,
+    data: (data.data as Timestamp)?.toMillis?.() ?? data.data,
+    valor: data.valor,
+    descricao: data.descricao,
+    categoriaId: data.categoriaId ?? null,
+    obs: data.obs,
+    mes: data.mes,
+    ano: data.ano,
+    criadoEm: (data.criadoEm as Timestamp)?.toMillis?.() ?? data.criadoEm,
+  } as Lancamento
+}
 
 function contasRef(uid: string) {
   return doc(db, 'users', uid, 'financas', 'contas')
@@ -95,22 +116,29 @@ export async function salvarLancamentos(uid: string, lancamentos: NovoLancamento
 export async function getLancamentos(uid: string, mes: number, ano: number): Promise<Lancamento[]> {
   const q = query(lancamentosCol(uid), where('mes', '==', mes), where('ano', '==', ano))
   const snap = await getDocs(q)
-  const lancamentos = snap.docs.map((d) => {
-    const data = d.data()
-    return {
-      id: d.id,
-      conta: data.conta,
-      data: (data.data as Timestamp)?.toMillis?.() ?? data.data,
-      valor: data.valor,
-      descricao: data.descricao,
-      categoriaId: data.categoriaId ?? null,
-      obs: data.obs,
-      mes: data.mes,
-      ano: data.ano,
-      criadoEm: (data.criadoEm as Timestamp)?.toMillis?.() ?? data.criadoEm,
-    } as Lancamento
-  })
+  const lancamentos = snap.docs.map(mapLancamento)
   return lancamentos.sort((a, b) => a.data - b.data)
+}
+
+export interface PaginaLancamentos {
+  itens: Lancamento[]
+  cursor: QueryDocumentSnapshot<DocumentData> | null
+}
+
+export async function getLancamentosPagina(
+  uid: string,
+  cursor: QueryDocumentSnapshot<DocumentData> | null = null,
+  tamanho = 30,
+): Promise<PaginaLancamentos> {
+  const restricoes = [orderBy('data', 'desc'), limit(tamanho)]
+  const q = cursor
+    ? query(lancamentosCol(uid), ...restricoes, startAfter(cursor))
+    : query(lancamentosCol(uid), ...restricoes)
+  const snap = await getDocs(q)
+  return {
+    itens: snap.docs.map(mapLancamento),
+    cursor: snap.docs.length === tamanho ? snap.docs[snap.docs.length - 1] : null,
+  }
 }
 
 export async function atualizarLancamento(uid: string, id: string, dados: Partial<Lancamento>) {

@@ -1,9 +1,11 @@
+import { Dumbbell, PersonStanding, type LucideIcon } from 'lucide-react'
+
 export type GrupoTreino = 'peito_ombro_triceps' | 'costas_biceps' | 'perna'
 
-export const GRUPOS: { id: GrupoTreino; label: string; emoji: string }[] = [
-  { id: 'peito_ombro_triceps', label: 'Peito, Ombro e Tríceps', emoji: '💪' },
-  { id: 'costas_biceps', label: 'Costas e Bíceps', emoji: '🔙' },
-  { id: 'perna', label: 'Perna', emoji: '🦵' },
+export const GRUPOS: { id: GrupoTreino; label: string; icon: LucideIcon }[] = [
+  { id: 'peito_ombro_triceps', label: 'Peito, Ombro e Tríceps', icon: Dumbbell },
+  { id: 'costas_biceps', label: 'Costas e Bíceps', icon: Dumbbell },
+  { id: 'perna', label: 'Perna', icon: PersonStanding },
 ]
 
 export type Objetivo = 'hipertrofia' | 'emagrecimento' | 'condicionamento' | 'forca' | 'saude_geral'

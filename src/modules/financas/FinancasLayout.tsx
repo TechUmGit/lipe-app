@@ -1,3 +1,4 @@
+import { Tag, Upload } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Topbar } from '../../shared/components/Topbar'
@@ -28,7 +29,7 @@ export function FinancasLayout() {
               style={{ padding: '6px 10px' }}
               aria-label="Importar extrato"
             >
-              ⬆️
+              <Upload size={18} strokeWidth={1.5} />
             </Link>
             <Link
               to="/financas/categorias"
@@ -36,7 +37,7 @@ export function FinancasLayout() {
               style={{ padding: '6px 10px' }}
               aria-label="Categorias"
             >
-              🏷️
+              <Tag size={18} strokeWidth={1.5} />
             </Link>
           </>
         }

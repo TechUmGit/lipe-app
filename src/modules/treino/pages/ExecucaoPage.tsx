@@ -1,3 +1,4 @@
+import { ArrowLeft, Check, Flame } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../../core/AuthContext'
@@ -79,10 +80,11 @@ export function ExecucaoPage() {
       <div className="stack">
         <div className="row">
           <button className="btn btn-ghost" onClick={() => navigate('/treino')} aria-label="Voltar">
-            ←
+            <ArrowLeft size={18} strokeWidth={1.5} />
           </button>
-          <h1 style={{ fontSize: 22 }}>
-            {grupoInfo.emoji} {grupoInfo.label}
+          <h1 className="row" style={{ fontSize: 22 }}>
+            <grupoInfo.icon size={22} strokeWidth={1.5} />
+            {grupoInfo.label}
           </h1>
         </div>
 
@@ -90,8 +92,9 @@ export function ExecucaoPage() {
           {exercicios.map((ex, i) => (
             <div key={i}>
               {i === totalPrincipais && (
-                <p className="text-dim text-sm" style={{ margin: '8px 0 4px' }}>
-                  🔥 Abdominal e Lombar
+                <p className="text-dim text-sm row" style={{ margin: '8px 0 4px' }}>
+                  <Flame size={14} strokeWidth={1.5} />
+                  Abdominal e Lombar
                 </p>
               )}
               <ExercicioItem
@@ -105,12 +108,13 @@ export function ExecucaoPage() {
         </div>
 
         <button
-          className="btn btn-primary btn-block"
-          style={{ padding: 16, fontSize: 16 }}
+          className="btn btn-primary btn-block row"
+          style={{ padding: 16, fontSize: 16, justifyContent: 'center' }}
           onClick={concluirTreino}
           disabled={concluindo}
         >
-          {concluindo ? 'Salvando...' : '✓ Concluir treino'}
+          {!concluindo && <Check size={18} strokeWidth={1.5} />}
+          {concluindo ? 'Salvando...' : 'Concluir treino'}
         </button>
       </div>
     </div>

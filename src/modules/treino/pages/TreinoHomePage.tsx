@@ -1,3 +1,4 @@
+import { Play } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../core/AuthContext'
@@ -60,15 +61,17 @@ export function TreinoHomePage() {
 
       <div className="card stack text-center">
         <p className="text-dim text-sm">Próximo treino</p>
-        <h1 style={{ fontSize: 32 }}>
-          {grupoInfo.emoji} {grupoInfo.label}
+        <h1 className="row" style={{ fontSize: 32, justifyContent: 'center' }}>
+          <grupoInfo.icon size={28} strokeWidth={1.5} />
+          {grupoInfo.label}
         </h1>
         <button
-          className="btn btn-primary btn-block"
-          style={{ padding: '16px', fontSize: 18 }}
+          className="btn btn-primary btn-block row"
+          style={{ padding: '16px', fontSize: 18, justifyContent: 'center' }}
           onClick={() => navigate(`/treino/execucao/${proximo}`)}
         >
-          ▶ Play
+          <Play size={20} strokeWidth={1.5} fill="currentColor" />
+          Play
         </button>
       </div>
 
@@ -93,8 +96,9 @@ export function TreinoHomePage() {
           const vezes = execucoes.filter((e) => e.grupo === g.id).length
           return (
             <div key={g.id} className="row-between card" style={{ padding: '12px 16px' }}>
-              <span>
-                {g.emoji} {g.label}
+              <span className="row">
+                <g.icon size={18} strokeWidth={1.5} />
+                {g.label}
               </span>
               <span className="text-dim text-sm">{vezes}x</span>
             </div>

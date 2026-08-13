@@ -1,3 +1,4 @@
+import { ClipboardCopy, Flame } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { ExercicioItem } from '../components/ExercicioItem'
@@ -156,8 +157,9 @@ export function SeriePage() {
 
           {GRUPOS.map((g) => (
             <div key={g.id} className="stack">
-              <h3>
-                {g.emoji} {g.label}
+              <h3 className="row">
+                <g.icon size={18} strokeWidth={1.5} />
+                {g.label}
               </h3>
               <div className="stack" style={{ gap: 8 }}>
                 {serieAtiva.grupos[g.id]?.map((ex, i) => (
@@ -172,7 +174,10 @@ export function SeriePage() {
           ))}
 
           <div className="stack">
-            <h3>🔥 Abdominal e Lombar</h3>
+            <h3 className="row">
+              <Flame size={18} strokeWidth={1.5} />
+              Abdominal e Lombar
+            </h3>
             <div className="stack" style={{ gap: 8 }}>
               {serieAtiva.abdominalLombar.map((ex, i) => (
                 <ExercicioItem
@@ -203,8 +208,9 @@ export function SeriePage() {
             Peça ao Claude para montar sua série com base nos seus equipamentos e perfil, cole a
             resposta em JSON abaixo e salve.
           </p>
-          <button type="button" className="btn" onClick={copiarPrompt}>
-            {promptCopiado ? 'Prompt copiado ✓' : '📋 Copiar prompt para o Claude'}
+          <button type="button" className="btn row" onClick={copiarPrompt}>
+            <ClipboardCopy size={16} strokeWidth={1.5} />
+            {promptCopiado ? 'Prompt copiado ✓' : 'Copiar prompt para o Claude'}
           </button>
 
           <details>

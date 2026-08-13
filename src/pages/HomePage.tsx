@@ -1,9 +1,10 @@
+import { Dumbbell, Headphones, Wallet, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Topbar } from '../shared/components/Topbar'
 
 interface AppEntry {
   to: string
-  emoji: string
+  icon: LucideIcon
   title: string
   description: string
   disabled?: boolean
@@ -12,20 +13,20 @@ interface AppEntry {
 const apps: AppEntry[] = [
   {
     to: '/treino',
-    emoji: '🏋️',
+    icon: Dumbbell,
     title: 'Treino',
     description: 'Sua série, seu equipamento, seu progresso.',
   },
   {
     to: '/audiobooks',
-    emoji: '🎧',
+    icon: Headphones,
     title: 'Audiobooks',
     description: 'Em breve.',
     disabled: true,
   },
   {
     to: '/financas',
-    emoji: '💰',
+    icon: Wallet,
     title: 'Controle financeiro pessoal',
     description: 'Extrato, categorias e orçamento.',
   },
@@ -41,7 +42,7 @@ export function HomePage() {
             app.disabled ? (
               <div key={app.to} className="card" style={{ opacity: 0.5 }}>
                 <div className="row">
-                  <span style={{ fontSize: 28 }}>{app.emoji}</span>
+                  <app.icon size={26} strokeWidth={1.5} />
                   <div>
                     <h3>{app.title}</h3>
                     <p className="text-dim text-sm">{app.description}</p>
@@ -51,7 +52,7 @@ export function HomePage() {
             ) : (
               <Link key={app.to} to={app.to} className="card">
                 <div className="row">
-                  <span style={{ fontSize: 28 }}>{app.emoji}</span>
+                  <app.icon size={26} strokeWidth={1.5} color="var(--text)" />
                   <div>
                     <h3>{app.title}</h3>
                     <p className="text-dim text-sm">{app.description}</p>

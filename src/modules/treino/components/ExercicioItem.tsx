@@ -1,3 +1,4 @@
+import { Dumbbell, PlayCircle } from 'lucide-react'
 import { linkVideoExercicio } from '../lib/logic'
 import type { Exercicio } from '../lib/types'
 
@@ -16,9 +17,9 @@ function Thumb({ exercicio, size }: { exercicio: Exercicio; size: number }) {
   return (
     <div
       className="exercise-thumb-placeholder"
-      style={{ width: size, aspectRatio: '1 / 1', flexShrink: 0, fontSize: size * 0.4 }}
+      style={{ width: size, aspectRatio: '1 / 1', flexShrink: 0 }}
     >
-      🏋️
+      <Dumbbell size={size * 0.4} strokeWidth={1.5} />
     </div>
   )
 }
@@ -74,7 +75,8 @@ export function ExercicioItem({
           className="video-link"
           onClick={(e) => e.stopPropagation()}
         >
-          ▶ Ver vídeo
+          <PlayCircle size={15} strokeWidth={1.5} />
+          Ver vídeo
         </a>
       </div>
     </div>

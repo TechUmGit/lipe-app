@@ -1,13 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { DonutChart } from '../components/DonutChart'
+import { MESES, MonthSwitcher } from '../components/MonthSwitcher'
 import { getCategorias, getLancamentos } from '../lib/financasApi'
 import type { Categoria, Lancamento } from '../lib/types'
-
-const MESES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-]
 
 function formatarMoeda(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -79,22 +75,14 @@ export function ResumoPage() {
 
   return (
     <div className="stack">
-      <div className="row">
-        <label style={{ flex: 1 }}>
-          Mês
-          <select value={mes} onChange={(e) => setMes(Number(e.target.value))}>
-            {MESES.map((m, i) => (
-              <option key={i} value={i + 1}>
-                {m}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label style={{ flex: 1 }}>
-          Ano
-          <input type="number" value={ano} onChange={(e) => setAno(Number(e.target.value))} />
-        </label>
-      </div>
+      <MonthSwitcher
+        mes={mes}
+        ano={ano}
+        onChange={(m, a) => {
+          setMes(m)
+          setAno(a)
+        }}
+      />
 
       {loading ? (
         <p className="text-dim">Carregando...</p>

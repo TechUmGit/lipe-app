@@ -1,3 +1,4 @@
+import { AlertTriangle, Download } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../core/AuthContext'
@@ -143,8 +144,9 @@ export function ImportarExtratoPage() {
           Preencha no computador, com Conta e Categoria escolhidas na lista suspensa de cada
           célula. Sempre que suas contas ou categorias mudarem, baixe um modelo novo.
         </p>
-        <button type="button" className="btn" onClick={baixarModelo} disabled={baixando}>
-          {baixando ? 'Gerando...' : '⬇️ Baixar modelo (.xlsx)'}
+        <button type="button" className="btn row" onClick={baixarModelo} disabled={baixando}>
+          <Download size={16} strokeWidth={1.5} />
+          {baixando ? 'Gerando...' : 'Baixar modelo (.xlsx)'}
         </button>
       </div>
 
@@ -173,9 +175,11 @@ export function ImportarExtratoPage() {
             {linhas.map((l, i) => (
               <div key={i} className="card stack" style={{ gap: 6 }}>
                 <div className="row-between">
-                  <span className="text-sm text-dim">
-                    {l.data ? new Date(l.data).toLocaleDateString('pt-BR') : '⚠️ data inválida'} ·{' '}
-                    {l.conta || '⚠️ sem conta'}
+                  <span className="text-sm text-dim row" style={{ gap: 4 }}>
+                    {!l.data && <AlertTriangle size={13} strokeWidth={1.5} />}
+                    {l.data ? new Date(l.data).toLocaleDateString('pt-BR') : 'data inválida'} ·{' '}
+                    {!l.conta && <AlertTriangle size={13} strokeWidth={1.5} />}
+                    {l.conta || 'sem conta'}
                   </span>
                   <span
                     className="text-sm"
