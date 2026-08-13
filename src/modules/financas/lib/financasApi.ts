@@ -120,6 +120,13 @@ export async function getLancamentos(uid: string, mes: number, ano: number): Pro
   return lancamentos.sort((a, b) => a.data - b.data)
 }
 
+export async function getLancamentosPorAno(uid: string, ano: number): Promise<Lancamento[]> {
+  const q = query(lancamentosCol(uid), where('ano', '==', ano))
+  const snap = await getDocs(q)
+  const lancamentos = snap.docs.map(mapLancamento)
+  return lancamentos.sort((a, b) => a.data - b.data)
+}
+
 export interface PaginaLancamentos {
   itens: Lancamento[]
   cursor: QueryDocumentSnapshot<DocumentData> | null

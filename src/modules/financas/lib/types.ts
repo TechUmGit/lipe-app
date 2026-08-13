@@ -25,6 +25,7 @@ export interface Categoria {
   ordem: number
   transferencia?: boolean
   taxas?: TaxaResponsabilidade[]
+  orcamentoMensal?: number
 }
 
 export interface Lancamento {

@@ -20,11 +20,12 @@ export function TaxaModal({
 }: {
   categoria: Categoria
   onClose: () => void
-  onSave: (taxas: TaxaResponsabilidade[]) => void
+  onSave: (dados: { taxas: TaxaResponsabilidade[]; orcamentoMensal: number }) => void
 }) {
   const [taxas, setTaxas] = useState<TaxaResponsabilidade[]>(categoria.taxas ?? [])
   const [percentualTexto, setPercentualTexto] = useState('100')
   const [vigenciaDesde, setVigenciaDesde] = useState(paraInputDate(Date.now()))
+  const [orcamentoTexto, setOrcamentoTexto] = useState(String(categoria.orcamentoMensal ?? 0))
 
   function adicionar() {
     const percentual = Math.min(100, Math.max(0, Number(percentualTexto) || 0))
@@ -40,7 +41,7 @@ export function TaxaModal({
   }
 
   function salvar() {
-    onSave(taxas)
+    onSave({ taxas, orcamentoMensal: Math.max(0, Number(orcamentoTexto) || 0) })
     onClose()
   }
 
@@ -52,6 +53,16 @@ export function TaxaModal({
         <h3>{categoria.nome}</h3>
         <p className="text-dim text-sm">Sua responsabilidade atual: {atual}%</p>
       </div>
+
+      <label>
+        Orçamento mensal (R$)
+        <input
+          type="number"
+          min={0}
+          value={orcamentoTexto}
+          onChange={(e) => setOrcamentoTexto(e.target.value)}
+        />
+      </label>
 
       {taxas.length > 0 && (
         <div className="stack" style={{ gap: 6 }}>

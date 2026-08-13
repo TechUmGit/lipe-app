@@ -424,3 +424,81 @@ label {
   justify-content: center;
   padding: 24px;
 }
+
+body.wide #root {
+  max-width: 1180px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.dashboard-pane {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  max-height: 640px;
+  overflow-y: auto;
+}
+
+.dashboard-pane .page {
+  padding: 0;
+}
+
+.dre-table-wrap {
+  overflow-x: auto;
+}
+
+.dre-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.dre-table th,
+.dre-table td {
+  padding: 6px 10px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+
+.dre-table th:first-child,
+.dre-table td:first-child {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background: var(--bg);
+}
+
+.dre-table th {
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.dre-table-grupo td {
+  padding-top: 16px;
+  font-weight: 700;
+  border-bottom: none;
+}
+
+.dre-table-subtotal td {
+  font-weight: 600;
+  background: var(--surface-2);
+}
+
+.dre-table-resultado td {
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+  padding-top: 12px;
+}
+
+@media (max-width: 899px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}

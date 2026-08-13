@@ -12,6 +12,12 @@ interface AppEntry {
 
 const apps: AppEntry[] = [
   {
+    to: '/financas',
+    icon: Wallet,
+    title: 'Controle financeiro pessoal',
+    description: 'Extrato, categorias e orçamento.',
+  },
+  {
     to: '/treino',
     icon: Dumbbell,
     title: 'Treino',
@@ -23,12 +29,6 @@ const apps: AppEntry[] = [
     title: 'Audiobooks',
     description: 'Em breve.',
     disabled: true,
-  },
-  {
-    to: '/financas',
-    icon: Wallet,
-    title: 'Controle financeiro pessoal',
-    description: 'Extrato, categorias e orçamento.',
   },
 ]
 

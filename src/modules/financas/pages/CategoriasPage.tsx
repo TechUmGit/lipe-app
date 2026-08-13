@@ -74,10 +74,14 @@ export function CategoriasPage() {
     await salvarContas(user.uid, novas)
   }
 
-  async function salvarTaxas(taxas: TaxaResponsabilidade[]) {
+  async function salvarTaxas(dados: { taxas: TaxaResponsabilidade[]; orcamentoMensal: number }) {
     if (!user || !editandoTaxa) return
-    await atualizarCategoria(user.uid, editandoTaxa.id, { taxas })
-    setCategorias((prev) => prev.map((c) => (c.id === editandoTaxa.id ? { ...c, taxas } : c)))
+    await atualizarCategoria(user.uid, editandoTaxa.id, dados)
+    setCategorias((prev) => prev.map((c) => (c.id === editandoTaxa.id ? { ...c, ...dados } : c)))
+  }
+
+  function formatarMoeda(v: number) {
+    return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
   }
 
   return (
@@ -134,7 +138,9 @@ export function CategoriasPage() {
                 >
                   <span className="text-sm">{c.nome}</span>
                   <div className="row" style={{ gap: 10 }}>
-                    <span className="text-dim text-sm">{taxaVigente(c)}%</span>
+                    <span className="text-dim text-sm">
+                      {taxaVigente(c)}%{c.orcamentoMensal ? ` · ${formatarMoeda(c.orcamentoMensal)}` : ''}
+                    </span>
                     <button
                       type="button"
                       className="btn btn-ghost"

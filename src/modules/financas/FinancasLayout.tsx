@@ -3,11 +3,14 @@ import { useEffect, useRef } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Topbar } from '../../shared/components/Topbar'
 import { useAuth } from '../../core/AuthContext'
+import { useIsDesktop } from '../../shared/hooks/useIsDesktop'
 import { garantirSeedInicial } from './lib/financasApi'
+import { FinancasDashboardDesktop } from './pages/FinancasDashboardDesktop'
 
 export function FinancasLayout() {
   const { user } = useAuth()
   const seedIniciado = useRef(false)
+  const isDesktop = useIsDesktop()
 
   useEffect(() => {
     if (user && !seedIniciado.current) {
@@ -15,6 +18,11 @@ export function FinancasLayout() {
       garantirSeedInicial(user.uid)
     }
   }, [user])
+
+  useEffect(() => {
+    document.body.classList.toggle('wide', isDesktop)
+    return () => document.body.classList.remove('wide')
+  }, [isDesktop])
 
   return (
     <>
@@ -42,20 +50,20 @@ export function FinancasLayout() {
           </>
         }
       />
-      <nav className="tabs">
-        <NavLink to="/financas" end className={({ isActive }) => (isActive ? 'active' : '')}>
-          Resumo
-        </NavLink>
-        <NavLink to="/financas/extrato" className={({ isActive }) => (isActive ? 'active' : '')}>
-          Extrato
-        </NavLink>
-        <NavLink to="/financas/dre" className={({ isActive }) => (isActive ? 'active' : '')}>
-          DRE
-        </NavLink>
-      </nav>
-      <div className="page">
-        <Outlet />
-      </div>
+      {!isDesktop && (
+        <nav className="tabs">
+          <NavLink to="/financas" end className={({ isActive }) => (isActive ? 'active' : '')}>
+            Resumo
+          </NavLink>
+          <NavLink to="/financas/extrato" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Extrato
+          </NavLink>
+          <NavLink to="/financas/dre" className={({ isActive }) => (isActive ? 'active' : '')}>
+            DRE
+          </NavLink>
+        </nav>
+      )}
+      <div className="page">{isDesktop ? <FinancasDashboardDesktop /> : <Outlet />}</div>
     </>
   )
 }
