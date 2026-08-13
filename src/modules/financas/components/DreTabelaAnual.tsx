@@ -1,14 +1,19 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
-import { getCategorias, getLancamentosPorAno } from '../lib/financasApi'
+import { getCategorias, getDreAnotacoesPorAno, getLancamentosPorAno, salvarDreAnotacao } from '../lib/financasApi'
 import { valorResponsavel } from '../lib/taxas'
-import { GRUPOS_CATEGORIA, type Categoria, type Lancamento } from '../lib/types'
+import { GRUPOS_CATEGORIA, type Categoria, type DreAnotacao, type DreCor, type Lancamento } from '../lib/types'
+import { DreCelulaModal } from './DreCelulaModal'
 
 const MESES_CURTO = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
 function formatarMoeda(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+}
+
+function chaveAnotacao(categoriaId: string, mes: number) {
+  return `${categoriaId}_${mes}`
 }
 
 export function DreTabelaAnual() {
@@ -17,16 +22,33 @@ export function DreTabelaAnual() {
   const [loading, setLoading] = useState(true)
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
+  const [anotacoes, setAnotacoes] = useState<DreAnotacao[]>([])
+  const [celulaSelecionada, setCelulaSelecionada] = useState<{
+    categoria: Categoria
+    mes: number
+    valor: number
+  } | null>(null)
 
   useEffect(() => {
     if (!user) return
     setLoading(true)
-    Promise.all([getCategorias(user.uid), getLancamentosPorAno(user.uid, ano)]).then(([c, l]) => {
+    Promise.all([
+      getCategorias(user.uid),
+      getLancamentosPorAno(user.uid, ano),
+      getDreAnotacoesPorAno(user.uid, ano),
+    ]).then(([c, l, a]) => {
       setCategorias(c)
       setLancamentos(l)
+      setAnotacoes(a)
       setLoading(false)
     })
   }, [user, ano])
+
+  const anotacoesPorChave = useMemo(() => {
+    const map = new Map<string, DreAnotacao>()
+    for (const a of anotacoes) map.set(chaveAnotacao(a.categoriaId, a.mes), a)
+    return map
+  }, [anotacoes])
 
   const { grupos, mesesAtivos } = useMemo(() => {
     const totaisPorCategoria = new Map<string, number[]>()
@@ -86,6 +108,19 @@ export function DreTabelaAnual() {
     setAno((a) => a + delta)
   }
 
+  async function salvarAnotacao(dados: { comentario: string; cor: DreCor | null; destaque: boolean }) {
+    if (!user || !celulaSelecionada) return
+    const { categoria, mes } = celulaSelecionada
+    await salvarDreAnotacao(user.uid, { categoriaId: categoria.id, ano, mes, ...dados })
+    const chave = chaveAnotacao(categoria.id, mes)
+    setAnotacoes((prev) => {
+      const semEsta = prev.filter((a) => chaveAnotacao(a.categoriaId, a.mes) !== chave)
+      const vazio = !dados.comentario && !dados.cor && !dados.destaque
+      if (vazio) return semEsta
+      return [...semEsta, { id: chave, categoriaId: categoria.id, ano, mes, ...dados, cor: dados.cor ?? undefined }]
+    })
+  }
+
   return (
     <div className="stack">
       <div className="row-between">
@@ -121,26 +156,38 @@ export function DreTabelaAnual() {
                   g.linhas.length > 0 && (
                     <Fragment key={g.id}>
                       <tr className="dre-table-grupo">
-                        <td colSpan={15}>{g.label}</td>
-                      </tr>
-                      {g.linhas.map((l) => (
-                        <tr key={l.categoria.id}>
-                          <td>{l.categoria.nome}</td>
-                          <td>{formatarMoeda(l.orcamentoMensal)}</td>
-                          <td>{formatarMoeda(l.mediaMensal)}</td>
-                          {l.meses.map((v, i) => (
-                            <td key={i}>{v !== 0 ? formatarMoeda(v) : '—'}</td>
-                          ))}
-                        </tr>
-                      ))}
-                      <tr className="dre-table-subtotal">
-                        <td>Subtotal {g.label}</td>
+                        <td>{g.label}</td>
                         <td>{formatarMoeda(g.orcamentoSubtotal)}</td>
                         <td>{formatarMoeda(g.mediaMensalSubtotal)}</td>
                         {g.mesesSubtotal.map((v, i) => (
                           <td key={i}>{formatarMoeda(v)}</td>
                         ))}
                       </tr>
+                      {g.linhas.map((l) => (
+                        <tr key={l.categoria.id}>
+                          <td>{l.categoria.nome}</td>
+                          <td>{formatarMoeda(l.orcamentoMensal)}</td>
+                          <td>{formatarMoeda(l.mediaMensal)}</td>
+                          {l.meses.map((v, i) => {
+                            const mes = i + 1
+                            const anot = anotacoesPorChave.get(chaveAnotacao(l.categoria.id, mes))
+                            const cor =
+                              anot?.cor === 'azul' ? 'var(--blue)' : anot?.cor === 'vermelho' ? 'var(--danger)' : undefined
+                            const bg = anot?.destaque ? 'var(--btn-bg)' : undefined
+                            return (
+                              <td
+                                key={i}
+                                className="dre-table-cell-click"
+                                style={{ color: cor, background: bg }}
+                                title={anot?.comentario || undefined}
+                                onClick={() => setCelulaSelecionada({ categoria: l.categoria, mes, valor: v })}
+                              >
+                                {v !== 0 ? formatarMoeda(v) : '—'}
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      ))}
                     </Fragment>
                   ),
               )}
@@ -158,8 +205,21 @@ export function DreTabelaAnual() {
       )}
 
       <p className="text-dim text-sm">
-        Média mensal calculada sobre {mesesAtivos || 0} mês(es) com lançamento em {ano}.
+        Média mensal calculada sobre {mesesAtivos || 0} mês(es) com lançamento em {ano}. Clique numa célula de
+        mês para comentar ou destacar.
       </p>
+
+      {celulaSelecionada && (
+        <DreCelulaModal
+          categoria={celulaSelecionada.categoria}
+          mes={celulaSelecionada.mes}
+          ano={ano}
+          valor={celulaSelecionada.valor}
+          anotacao={anotacoesPorChave.get(chaveAnotacao(celulaSelecionada.categoria.id, celulaSelecionada.mes))}
+          onClose={() => setCelulaSelecionada(null)}
+          onSave={salvarAnotacao}
+        />
+      )}
     </div>
   )
 }

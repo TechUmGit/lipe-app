@@ -12,6 +12,7 @@
   --accent-dim: rgba(109, 77, 230, 0.1);
   --danger: #dc2626;
   --success: #17a673;
+  --blue: #2563eb;
   --btn-bg: #ffdea4;
   --btn-border: #ffdea4;
   --btn-text: var(--text);
@@ -481,13 +482,11 @@ body.wide #root {
 }
 
 .dre-table-grupo td {
-  padding-top: 16px;
   font-weight: 700;
-  border-bottom: none;
+  background: var(--surface-2);
 }
 
-.dre-table-subtotal td {
-  font-weight: 600;
+.dre-table-grupo td:first-child {
   background: var(--surface-2);
 }
 
@@ -495,6 +494,16 @@ body.wide #root {
   font-weight: 700;
   border-top: 2px solid var(--border);
   padding-top: 12px;
+}
+
+.dre-table-cell-click {
+  cursor: pointer;
+}
+
+.dre-table-cell-click:hover {
+  outline: 1.5px solid var(--accent);
+  outline-offset: -1.5px;
+  border-radius: 4px;
 }
 
 @media (max-width: 899px) {

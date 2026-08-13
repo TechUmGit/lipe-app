@@ -42,3 +42,15 @@ export interface Lancamento {
 }
 
 export type NovoLancamento = Omit<Lancamento, 'id' | 'criadoEm'>
+
+export type DreCor = 'azul' | 'vermelho'
+
+export interface DreAnotacao {
+  id: string
+  categoriaId: string
+  ano: number
+  mes: number
+  comentario?: string
+  cor?: DreCor
+  destaque?: boolean
+}

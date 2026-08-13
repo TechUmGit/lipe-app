@@ -20,7 +20,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../../../core/firebase'
 import { CATEGORIAS_SEED, CATEGORIA_TRANSFERENCIA_NOME, CONTAS_SEED } from './categoriasSeed'
-import type { Categoria, Lancamento, NovoLancamento } from './types'
+import type { Categoria, DreAnotacao, DreCor, Lancamento, NovoLancamento } from './types'
 
 function mapLancamento(d: QueryDocumentSnapshot<DocumentData>): Lancamento {
   const data = d.data()
@@ -52,6 +52,14 @@ function categoriasCol(uid: string) {
 
 function lancamentosCol(uid: string) {
   return collection(db, 'users', uid, 'financas_lancamentos')
+}
+
+function dreAnotacoesCol(uid: string) {
+  return collection(db, 'users', uid, 'financas_dre_anotacoes')
+}
+
+function dreAnotacaoId(categoriaId: string, ano: number, mes: number) {
+  return `${categoriaId}_${ano}_${mes}`
 }
 
 export async function getContas(uid: string): Promise<string[]> {
@@ -154,4 +162,30 @@ export async function atualizarLancamento(uid: string, id: string, dados: Partia
 
 export async function removerLancamento(uid: string, id: string) {
   await deleteDoc(doc(lancamentosCol(uid), id))
+}
+
+export async function getDreAnotacoesPorAno(uid: string, ano: number): Promise<DreAnotacao[]> {
+  const q = query(dreAnotacoesCol(uid), where('ano', '==', ano))
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as DreAnotacao)
+}
+
+export async function salvarDreAnotacao(
+  uid: string,
+  dados: { categoriaId: string; ano: number; mes: number; comentario: string; cor: DreCor | null; destaque: boolean },
+) {
+  const id = dreAnotacaoId(dados.categoriaId, dados.ano, dados.mes)
+  const vazio = !dados.comentario && !dados.cor && !dados.destaque
+  if (vazio) {
+    await deleteDoc(doc(dreAnotacoesCol(uid), id))
+    return
+  }
+  await setDoc(doc(dreAnotacoesCol(uid), id), {
+    categoriaId: dados.categoriaId,
+    ano: dados.ano,
+    mes: dados.mes,
+    comentario: dados.comentario,
+    cor: dados.cor,
+    destaque: dados.destaque,
+  })
 }
