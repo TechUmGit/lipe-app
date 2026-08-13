@@ -7,6 +7,7 @@ import { GRUPOS_CATEGORIA, type Categoria, type DreAnotacao, type DreCor, type L
 import { DreCelulaModal } from './DreCelulaModal'
 
 const MESES_CURTO = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+const CATEGORIAS_VIAGEM = new Set(['24. Viagens Fillipe', '25. Viagens Família'])
 
 function formatarMoeda(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
@@ -103,6 +104,18 @@ export function DreTabelaAnual() {
   const resultadoPorMes = new Array(12)
     .fill(0)
     .map((_, i) => grupos.reduce((s, g) => s + g.mesesSubtotal[i], 0))
+
+  const gruposDespesa = grupos.filter((g) => g.id !== 'receita')
+  const orcamentoCompleto = gruposDespesa.reduce((s, g) => s + g.orcamentoSubtotal, 0)
+  const mediaAtual = gruposDespesa.reduce((s, g) => s + Math.abs(g.mediaMensalSubtotal), 0)
+  const mediaAtualSemViagens = gruposDespesa.reduce(
+    (s, g) =>
+      s +
+      g.linhas
+        .filter((l) => !CATEGORIAS_VIAGEM.has(l.categoria.nome))
+        .reduce((s2, l) => s2 + Math.abs(l.mediaMensal), 0),
+    0,
+  )
 
   function mudarAno(delta: number) {
     setAno((a) => a + delta)
@@ -208,6 +221,24 @@ export function DreTabelaAnual() {
         Média mensal calculada sobre {mesesAtivos || 0} mês(es) com lançamento em {ano}. Clique numa célula de
         mês para comentar ou destacar.
       </p>
+
+      <div className="stack" style={{ gap: 8 }}>
+        <h3>Resumo geral de despesas</h3>
+        <div className="card stack" style={{ gap: 8 }}>
+          <div className="row-between text-sm">
+            <span className="text-dim">Orçamento completo de despesas</span>
+            <span style={{ fontWeight: 600 }}>{formatarMoeda(orcamentoCompleto)}</span>
+          </div>
+          <div className="row-between text-sm">
+            <span className="text-dim">Despesas médias atuais</span>
+            <span style={{ fontWeight: 600 }}>{formatarMoeda(mediaAtual)}</span>
+          </div>
+          <div className="row-between text-sm">
+            <span className="text-dim">Despesas médias atuais (sem Viagens Fillipe/Família)</span>
+            <span style={{ fontWeight: 600 }}>{formatarMoeda(mediaAtualSemViagens)}</span>
+          </div>
+        </div>
+      </div>
 
       {celulaSelecionada && (
         <DreCelulaModal
