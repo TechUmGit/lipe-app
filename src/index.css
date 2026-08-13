@@ -260,6 +260,129 @@ label {
   color: var(--accent-strong);
 }
 
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 57px;
+  background: var(--bg);
+  z-index: 9;
+}
+
+.tabs a {
+  flex: 1;
+  text-align: center;
+  padding: 14px 0;
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tabs a.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(22, 21, 31, 0.4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal-sheet {
+  background: var(--surface);
+  width: 100%;
+  max-width: 480px;
+  border-radius: 20px 20px 0 0;
+  padding: 20px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  max-height: 88svh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  margin: 0 auto 4px;
+}
+
+.lancamento-row {
+  cursor: pointer;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.lancamento-row:last-child {
+  border-bottom: none;
+}
+
+.lancamento-icon {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  background: var(--surface-2);
+}
+
+.lancamento-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.day-group-label {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin: 18px 0 4px;
+}
+
+.day-group-label:first-child {
+  margin-top: 0;
+}
+
+.stat-row {
+  display: flex;
+}
+
+.stat-row > div {
+  flex: 1;
+  text-align: center;
+  padding: 0 6px;
+}
+
+.stat-row > div + div {
+  border-left: 1px solid var(--border);
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
 .progress-bar {
   height: 8px;
   border-radius: 999px;

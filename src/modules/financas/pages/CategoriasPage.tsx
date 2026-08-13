@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
+import { Topbar } from '../../../shared/components/Topbar'
 import {
   criarCategoria,
   getCategorias,
@@ -69,10 +70,14 @@ export function CategoriasPage() {
     await salvarContas(user.uid, novas)
   }
 
-  if (loading) return <p className="text-dim">Carregando...</p>
-
   return (
-    <div className="stack">
+    <>
+      <Topbar title="Categorias" backTo="/financas" />
+      <div className="page">
+      {loading ? (
+        <p className="text-dim">Carregando...</p>
+      ) : (
+      <>
       <section className="stack">
         <h2>Contas</h2>
         <div className="chip-grid">
@@ -138,6 +143,9 @@ export function CategoriasPage() {
           </div>
         </section>
       ))}
-    </div>
+      </>
+      )}
+      </div>
+    </>
   )
 }

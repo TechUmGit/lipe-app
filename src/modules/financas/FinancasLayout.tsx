@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Topbar } from '../../shared/components/Topbar'
 import { useAuth } from '../../core/AuthContext'
 import { garantirSeedInicial } from './lib/financasApi'
@@ -17,24 +17,44 @@ export function FinancasLayout() {
 
   return (
     <>
-      <Topbar title="Finanças" backTo="/" />
+      <Topbar
+        title="Finanças"
+        backTo="/"
+        action={
+          <>
+            <Link
+              to="/financas/importar"
+              className="btn btn-ghost"
+              style={{ padding: '6px 10px' }}
+              aria-label="Importar extrato"
+            >
+              ⬆️
+            </Link>
+            <Link
+              to="/financas/categorias"
+              className="btn btn-ghost"
+              style={{ padding: '6px 10px' }}
+              aria-label="Categorias"
+            >
+              🏷️
+            </Link>
+          </>
+        }
+      />
+      <nav className="tabs">
+        <NavLink to="/financas" end className={({ isActive }) => (isActive ? 'active' : '')}>
+          Resumo
+        </NavLink>
+        <NavLink to="/financas/extrato" className={({ isActive }) => (isActive ? 'active' : '')}>
+          Extrato
+        </NavLink>
+        <NavLink to="/financas/dre" className={({ isActive }) => (isActive ? 'active' : '')}>
+          DRE
+        </NavLink>
+      </nav>
       <div className="page">
         <Outlet />
       </div>
-      <nav className="bottom-nav">
-        <NavLink to="/financas" end className={({ isActive }) => (isActive ? 'active' : '')}>
-          <span>📄</span>
-          Extrato
-        </NavLink>
-        <NavLink to="/financas/importar" className={({ isActive }) => (isActive ? 'active' : '')}>
-          <span>⬆️</span>
-          Importar
-        </NavLink>
-        <NavLink to="/financas/categorias" className={({ isActive }) => (isActive ? 'active' : '')}>
-          <span>🏷️</span>
-          Categorias
-        </NavLink>
-      </nav>
     </>
   )
 }

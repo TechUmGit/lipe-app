@@ -8,7 +8,9 @@ import { SeriePage } from './modules/treino/pages/SeriePage'
 import { ConfiguracoesPage } from './modules/treino/pages/ConfiguracoesPage'
 import { ExecucaoPage } from './modules/treino/pages/ExecucaoPage'
 import { FinancasLayout } from './modules/financas/FinancasLayout'
+import { ResumoPage } from './modules/financas/pages/ResumoPage'
 import { ExtratoListPage } from './modules/financas/pages/ExtratoListPage'
+import { DREPage } from './modules/financas/pages/DREPage'
 import { ImportarExtratoPage } from './modules/financas/pages/ImportarExtratoPage'
 import { CategoriasPage } from './modules/financas/pages/CategoriasPage'
 
@@ -56,10 +58,28 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<ExtratoListPage />} />
-        <Route path="importar" element={<ImportarExtratoPage />} />
-        <Route path="categorias" element={<CategoriasPage />} />
+        <Route index element={<ResumoPage />} />
+        <Route path="extrato" element={<ExtratoListPage />} />
+        <Route path="dre" element={<DREPage />} />
       </Route>
+
+      <Route
+        path="/financas/importar"
+        element={
+          <ProtectedRoute>
+            <ImportarExtratoPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/financas/categorias"
+        element={
+          <ProtectedRoute>
+            <CategoriasPage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   )
 }

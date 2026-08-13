@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../core/AuthContext'
+import { Topbar } from '../../../shared/components/Topbar'
 import { gerarTemplate, lerTemplate, type LinhaTemplate } from '../lib/excelTemplate'
 import { getCategorias, getContas, salvarLancamentos } from '../lib/financasApi'
 import { GRUPOS_CATEGORIA, type Categoria, type NovoLancamento } from '../lib/types'
@@ -133,9 +134,9 @@ export function ImportarExtratoPage() {
   }
 
   return (
-    <div className="stack">
-      <h2>Importar extrato</h2>
-
+    <>
+      <Topbar title="Importar extrato" backTo="/financas" />
+      <div className="page">
       <div className="card stack">
         <h3>1. Baixe o modelo</h3>
         <p className="text-dim text-sm">
@@ -215,6 +216,7 @@ export function ImportarExtratoPage() {
           </button>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

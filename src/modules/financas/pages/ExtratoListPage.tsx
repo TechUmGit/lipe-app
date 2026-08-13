@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
-import {
-  atualizarLancamento,
-  getCategorias,
-  getLancamentos,
-  removerLancamento,
-} from '../lib/financasApi'
-import { GRUPOS_CATEGORIA, type Categoria, type Lancamento } from '../lib/types'
+import { LancamentoModal } from '../components/LancamentoModal'
+import { agruparPorDia } from '../lib/dateGroups'
+import { atualizarLancamento, getCategorias, getLancamentos, removerLancamento } from '../lib/financasApi'
+import type { Categoria, Lancamento } from '../lib/types'
 
 const MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -25,17 +22,16 @@ export function ExtratoListPage() {
   const [loading, setLoading] = useState(true)
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [selecionado, setSelecionado] = useState<Lancamento | null>(null)
 
   useEffect(() => {
     if (!user) return
     setLoading(true)
-    Promise.all([getLancamentos(user.uid, mes, ano), getCategorias(user.uid)]).then(
-      ([l, c]) => {
-        setLancamentos(l)
-        setCategorias(c)
-        setLoading(false)
-      },
-    )
+    Promise.all([getLancamentos(user.uid, mes, ano), getCategorias(user.uid)]).then(([l, c]) => {
+      setLancamentos(l)
+      setCategorias(c)
+      setLoading(false)
+    })
   }, [user, mes, ano])
 
   const categoriasPorId = useMemo(() => {
@@ -44,11 +40,6 @@ export function ExtratoListPage() {
     return map
   }, [categorias])
 
-  const categoriasOrdenadas = useMemo(
-    () => GRUPOS_CATEGORIA.map((g) => ({ ...g, itens: categorias.filter((c) => c.grupo === g.id) })),
-    [categorias],
-  )
-
   const totais = useMemo(() => {
     let receita = 0
     let despesa = 0
@@ -56,7 +47,6 @@ export function ExtratoListPage() {
       const cat = l.categoriaId ? categoriasPorId.get(l.categoriaId) : undefined
       if (cat?.transferencia || cat?.grupo === 'bens') continue
       if (!cat) {
-        // sem categoria: melhor estimativa é o sinal do valor
         if (l.valor >= 0) receita += l.valor
         else despesa += l.valor
         continue
@@ -67,16 +57,14 @@ export function ExtratoListPage() {
     return { receita, despesa, saldo: receita + despesa }
   }, [lancamentos, categoriasPorId])
 
-  async function mudarCategoria(id: string, categoriaId: string) {
-    if (!user) return
-    setLancamentos((prev) => prev.map((l) => (l.id === id ? { ...l, categoriaId } : l)))
-    await atualizarLancamento(user.uid, id, { categoriaId: categoriaId || null })
-  }
+  const grupos = useMemo(() => agruparPorDia(lancamentos), [lancamentos])
 
-  async function mudarObs(id: string, obs: string) {
+  async function salvarDetalhe(id: string, categoriaId: string, obs: string) {
     if (!user) return
-    setLancamentos((prev) => prev.map((l) => (l.id === id ? { ...l, obs } : l)))
-    await atualizarLancamento(user.uid, id, { obs })
+    setLancamentos((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, categoriaId: categoriaId || null, obs } : l)),
+    )
+    await atualizarLancamento(user.uid, id, { categoriaId: categoriaId || null, obs })
   }
 
   async function excluir(id: string) {
@@ -104,18 +92,18 @@ export function ExtratoListPage() {
         </label>
       </div>
 
-      <div className="card stack">
-        <div className="row-between text-sm">
-          <span className="text-dim">Receita</span>
-          <span style={{ color: 'var(--success)' }}>{formatarMoeda(totais.receita)}</span>
+      <div className="card stat-row">
+        <div>
+          <p className="text-dim text-sm">Receita</p>
+          <p style={{ color: 'var(--success)', fontWeight: 600 }}>{formatarMoeda(totais.receita)}</p>
         </div>
-        <div className="row-between text-sm">
-          <span className="text-dim">Despesa</span>
-          <span style={{ color: 'var(--danger)' }}>{formatarMoeda(totais.despesa)}</span>
+        <div>
+          <p className="text-dim text-sm">Despesa</p>
+          <p style={{ fontWeight: 600 }}>{formatarMoeda(totais.despesa)}</p>
         </div>
-        <div className="row-between">
-          <span>Saldo</span>
-          <span style={{ fontWeight: 600 }}>{formatarMoeda(totais.saldo)}</span>
+        <div>
+          <p className="text-dim text-sm">Saldo</p>
+          <p style={{ fontWeight: 600 }}>{formatarMoeda(totais.saldo)}</p>
         </div>
       </div>
 
@@ -124,57 +112,52 @@ export function ExtratoListPage() {
       ) : lancamentos.length === 0 ? (
         <p className="text-dim text-center">Nenhum lançamento nesse mês.</p>
       ) : (
-        <div className="stack" style={{ gap: 8 }}>
-          {lancamentos.map((l) => (
-            <div key={l.id} className="card stack" style={{ gap: 6 }}>
-              <div className="row-between">
-                <span className="text-sm text-dim">
-                  {new Date(l.data).toLocaleDateString('pt-BR')} · {l.conta}
-                </span>
-                <span
-                  className="text-sm"
-                  style={{ fontWeight: 600, color: l.valor < 0 ? 'var(--danger)' : 'var(--success)' }}
-                >
-                  {formatarMoeda(l.valor)}
-                </span>
+        <div>
+          {grupos.map((grupo) => (
+            <div key={grupo.label}>
+              <p className="day-group-label">{grupo.label}</p>
+              <div>
+                {grupo.itens.map((l) => {
+                  const cat = l.categoriaId ? categoriasPorId.get(l.categoriaId) : undefined
+                  return (
+                    <div
+                      key={l.id}
+                      className="row lancamento-row"
+                      onClick={() => setSelecionado(l)}
+                    >
+                      <div className="lancamento-icon">{l.valor >= 0 ? '↓' : '↑'}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p className="lancamento-title">{l.descricao}</p>
+                        <p className="text-dim text-sm">
+                          {l.conta} · {cat ? cat.nome : 'Sem categoria'}
+                        </p>
+                      </div>
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          color: l.valor < 0 ? 'var(--text)' : 'var(--success)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {formatarMoeda(l.valor)}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
-              <p className="text-sm" style={{ overflowWrap: 'break-word' }}>
-                {l.descricao}
-              </p>
-              <select
-                value={l.categoriaId ?? ''}
-                onChange={(e) => mudarCategoria(l.id, e.target.value)}
-              >
-                <option value="">Sem categoria</option>
-                {categoriasOrdenadas.map((g) =>
-                  g.itens.length ? (
-                    <optgroup key={g.id} label={g.label}>
-                      {g.itens.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.transferencia ? '↔ ' : ''}
-                          {c.nome}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ) : null,
-                )}
-              </select>
-              <input
-                placeholder="Comentário..."
-                defaultValue={l.obs ?? ''}
-                onBlur={(e) => mudarObs(l.id, e.target.value)}
-              />
-              <button
-                type="button"
-                className="btn btn-ghost"
-                style={{ alignSelf: 'flex-end', padding: '4px 8px' }}
-                onClick={() => excluir(l.id)}
-              >
-                Excluir
-              </button>
             </div>
           ))}
         </div>
+      )}
+
+      {selecionado && (
+        <LancamentoModal
+          lancamento={selecionado}
+          categorias={categorias}
+          onClose={() => setSelecionado(null)}
+          onSave={(categoriaId, obs) => salvarDetalhe(selecionado.id, categoriaId, obs)}
+          onDelete={() => excluir(selecionado.id)}
+        />
       )}
     </div>
   )
