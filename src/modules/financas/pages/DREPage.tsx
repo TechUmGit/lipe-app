@@ -65,11 +65,6 @@ export function DREPage() {
         }}
       />
 
-      <div className="alert">
-        Por enquanto essa DRE mostra só o realizado. Comparação com orçado e comentários por linha
-        vêm numa próxima etapa.
-      </div>
-
       {loading ? (
         <p className="text-dim">Carregando...</p>
       ) : (
