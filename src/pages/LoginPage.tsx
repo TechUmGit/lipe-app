@@ -33,11 +33,10 @@ export function LoginPage() {
       <form className="stack" style={{ width: '100%', maxWidth: 340 }} onSubmit={handleSubmit}>
         <div className="text-center" style={{ marginBottom: 8 }}>
           <img
-            src={`${import.meta.env.BASE_URL}icon-512.png`}
+            src={`${import.meta.env.BASE_URL}login-avatar.png`}
             alt="Lipe"
             width={240}
-            height={240}
-            style={{ borderRadius: 22, margin: '0 auto 12px' }}
+            style={{ borderRadius: 22, margin: '0 auto 12px', height: 'auto' }}
           />
         </div>
 
