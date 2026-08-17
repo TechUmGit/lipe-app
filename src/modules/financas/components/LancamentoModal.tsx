@@ -1,9 +1,16 @@
+import { Landmark, PencilLine } from 'lucide-react'
 import { useState } from 'react'
 import { Modal } from '../../../shared/components/Modal'
 import { GRUPOS_CATEGORIA, type Categoria, type Lancamento } from '../lib/types'
 
 function formatarMoeda(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function origemInfo(l: Lancamento): { texto: string; Icone: typeof Landmark } {
+  if (l.conciliado) return { texto: 'Conciliado: você lançou manualmente e o banco confirmou', Icone: Landmark }
+  if (l.origem === 'pluggy') return { texto: 'Veio automaticamente do banco, ainda não revisado', Icone: Landmark }
+  return { texto: 'Lançado manualmente', Icone: PencilLine }
 }
 
 export function LancamentoModal({
@@ -39,6 +46,8 @@ export function LancamentoModal({
     }
   }
 
+  const origem = origemInfo(lancamento)
+
   return (
     <Modal onClose={onClose}>
       <div className="stack">
@@ -57,6 +66,10 @@ export function LancamentoModal({
           </span>
         </div>
         <p style={{ fontWeight: 600 }}>{lancamento.descricao}</p>
+        <p className="text-dim text-sm row" style={{ gap: 4 }}>
+          <origem.Icone size={13} strokeWidth={1.5} />
+          {origem.texto}
+        </p>
       </div>
 
       <label>

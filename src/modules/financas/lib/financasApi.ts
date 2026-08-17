@@ -35,6 +35,9 @@ function mapLancamento(d: QueryDocumentSnapshot<DocumentData>): Lancamento {
     mes: data.mes,
     ano: data.ano,
     criadoEm: (data.criadoEm as Timestamp)?.toMillis?.() ?? data.criadoEm,
+    origem: data.origem,
+    conciliado: data.conciliado,
+    pluggyTransactionId: data.pluggyTransactionId,
   } as Lancamento
 }
 

@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Landmark } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { LancamentoModal } from '../components/LancamentoModal'
@@ -197,8 +197,28 @@ export function ExtratoListPage() {
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p className="lancamento-title">{l.descricao}</p>
-                        <p className="text-dim text-sm">
+                        <p className="text-dim text-sm row" style={{ gap: 4 }}>
                           {l.conta} · {cat ? cat.nome : 'Verificar'}
+                          {l.conciliado && (
+                            <Landmark
+                              size={12}
+                              strokeWidth={1.5}
+                              color="var(--success)"
+                              aria-label="Conciliado com o banco"
+                            >
+                              <title>Conciliado com o banco</title>
+                            </Landmark>
+                          )}
+                          {l.origem === 'pluggy' && !l.conciliado && (
+                            <Landmark
+                              size={12}
+                              strokeWidth={1.5}
+                              style={{ opacity: 0.5 }}
+                              aria-label="Veio do banco automaticamente, ainda não revisado"
+                            >
+                              <title>Veio do banco automaticamente, ainda não revisado</title>
+                            </Landmark>
+                          )}
                         </p>
                       </div>
                       <span
