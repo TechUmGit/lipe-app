@@ -3,6 +3,7 @@ import { useAuth } from '../../../core/AuthContext'
 import { MonthSwitcher } from '../components/MonthSwitcher'
 import { getCategorias, getLancamentos } from '../lib/financasApi'
 import { valorResponsavel } from '../lib/taxas'
+import { useMesAno } from '../lib/useMesAno'
 import { GRUPOS_CATEGORIA, type Categoria, type Lancamento } from '../lib/types'
 
 function formatarMoeda(v: number) {
@@ -11,9 +12,7 @@ function formatarMoeda(v: number) {
 
 export function DREPage() {
   const { user } = useAuth()
-  const hoje = new Date()
-  const [mes, setMes] = useState(hoje.getMonth() + 1)
-  const [ano, setAno] = useState(hoje.getFullYear())
+  const { mes, ano, setMesAno } = useMesAno()
   const [loading, setLoading] = useState(true)
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -56,14 +55,7 @@ export function DREPage() {
 
   return (
     <div className="stack">
-      <MonthSwitcher
-        mes={mes}
-        ano={ano}
-        onChange={(m, a) => {
-          setMes(m)
-          setAno(a)
-        }}
-      />
+      <MonthSwitcher mes={mes} ano={ano} onChange={setMesAno} />
 
       {loading ? (
         <p className="text-dim">Carregando...</p>

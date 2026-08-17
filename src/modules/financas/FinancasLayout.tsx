@@ -1,16 +1,20 @@
 import { Tag, Upload } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Topbar } from '../../shared/components/Topbar'
 import { useAuth } from '../../core/AuthContext'
 import { useIsDesktop } from '../../shared/hooks/useIsDesktop'
 import { garantirSeedInicial } from './lib/financasApi'
+import { MesAnoContext } from './lib/MesAnoContext'
 import { FinancasDashboardDesktop } from './pages/FinancasDashboardDesktop'
 
 export function FinancasLayout() {
   const { user } = useAuth()
   const seedIniciado = useRef(false)
   const isDesktop = useIsDesktop()
+  const hoje = new Date()
+  const [mes, setMes] = useState(hoje.getMonth() + 1)
+  const [ano, setAno] = useState(hoje.getFullYear())
 
   useEffect(() => {
     if (user && !seedIniciado.current) {
@@ -63,7 +67,24 @@ export function FinancasLayout() {
           </NavLink>
         </nav>
       )}
-      <div className="page">{isDesktop ? <FinancasDashboardDesktop /> : <Outlet />}</div>
+      <div className="page">
+        {isDesktop ? (
+          <FinancasDashboardDesktop />
+        ) : (
+          <MesAnoContext.Provider
+            value={{
+              mes,
+              ano,
+              setMesAno: (m, a) => {
+                setMes(m)
+                setAno(a)
+              },
+            }}
+          >
+            <Outlet />
+          </MesAnoContext.Provider>
+        )}
+      </div>
     </>
   )
 }
