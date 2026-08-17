@@ -1,10 +1,11 @@
 /**
  * Carrega o widget oficial da Pluggy Connect via CDN deles (não expõe
  * nenhuma chave — só recebe o connectToken de curta duração gerado pelo
- * backend). Versão fixada abaixo; se a Pluggy descontinuar essa versão,
- * confira a URL atual em https://docs.pluggy.ai/docs/pluggy-connect.
+ * backend). URL "latest" sem versão fixa — a Pluggy descontinuou a versão
+ * pinada anteriormente (v2.9.0, 404), então preferimos a que eles mantêm
+ * sempre atualizada em vez de fixar um número que pode sumir de novo.
  */
-const SCRIPT_URL = 'https://cdn.pluggy.ai/pluggy-connect/v2.9.0/pluggy-connect.js'
+const SCRIPT_URL = 'https://cdn.pluggy.ai/pluggy-connect.js'
 
 export interface PluggyItemData {
   id: string
