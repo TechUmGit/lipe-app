@@ -13,6 +13,8 @@ import { ExtratoListPage } from './modules/financas/pages/ExtratoListPage'
 import { DREPage } from './modules/financas/pages/DREPage'
 import { ImportarExtratoPage } from './modules/financas/pages/ImportarExtratoPage'
 import { CategoriasPage } from './modules/financas/pages/CategoriasPage'
+import { ConexoesBancariasPage } from './modules/financas/pages/ConexoesBancariasPage'
+import { ConciliacaoLogPage } from './modules/financas/pages/ConciliacaoLogPage'
 
 function App() {
   return (
@@ -77,6 +79,24 @@ function App() {
         element={
           <ProtectedRoute>
             <CategoriasPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/financas/conexoes"
+        element={
+          <ProtectedRoute>
+            <ConexoesBancariasPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/financas/conciliacao"
+        element={
+          <ProtectedRoute>
+            <ConciliacaoLogPage />
           </ProtectedRoute>
         }
       />

@@ -1,4 +1,4 @@
-import { Tag, Upload } from 'lucide-react'
+import { Landmark, Tag, Upload } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Topbar } from '../../shared/components/Topbar'
@@ -50,6 +50,14 @@ export function FinancasLayout() {
               aria-label="Categorias"
             >
               <Tag size={18} strokeWidth={1.5} />
+            </Link>
+            <Link
+              to="/financas/conexoes"
+              className="btn btn-ghost"
+              style={{ padding: '6px 10px' }}
+              aria-label="Contas conectadas"
+            >
+              <Landmark size={18} strokeWidth={1.5} />
             </Link>
           </>
         }
