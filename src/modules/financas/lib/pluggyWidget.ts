@@ -14,6 +14,11 @@ export interface PluggyItemData {
 export interface PluggyConnectOptions {
   connectToken: string
   includeSandbox?: boolean
+  /** Pula a seleção de instituição e vai direto pra esse conector. Usamos o 200 (MeuPluggy). */
+  selectedConnectorId?: number
+  /** Filtra a lista de instituições pra mostrar só esses conectores. */
+  connectorIds?: number[]
+  updateItem?: string
   onSuccess: (itemData: PluggyItemData) => void
   onError?: (error: unknown) => void
   onClose?: () => void

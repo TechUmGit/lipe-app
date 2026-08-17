@@ -57,6 +57,8 @@ export function ConexoesBancariasPage() {
       const connectToken = await criarConnectToken(itemIdExistente)
       await abrirPluggyConnect({
         connectToken,
+        connectorIds: [200], // MeuPluggy — único conector disponível fora de um plano pago da Pluggy
+        updateItem: itemIdExistente,
         onSuccess: async (itemData) => {
           try {
             await confirmarItem(itemData.id)
@@ -130,9 +132,10 @@ export function ConexoesBancariasPage() {
         ) : (
           <div className="stack">
             <p className="text-dim text-sm">
-              Conecte suas contas via Open Finance (Pluggy) pra trazer transações automaticamente.
-              Lançamentos que já batem com algo que você categorizou manualmente são conciliados sem
-              duplicar; o resto entra como "Verificar".
+              Conecte suas contas via Meu Pluggy (meu.pluggy.ai) pra trazer transações
+              automaticamente. Se ainda não conectou Nubank/BTG por lá, o próprio fluxo abaixo leva
+              você até essa etapa. Lançamentos que já batem com algo que você categorizou
+              manualmente são conciliados sem duplicar; o resto entra como "Verificar".
             </p>
 
             {erro && <p className="error-text">{erro}</p>}
