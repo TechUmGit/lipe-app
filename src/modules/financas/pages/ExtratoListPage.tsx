@@ -8,8 +8,10 @@ import {
   atualizarLancamento,
   dividirLancamento,
   getCategorias,
+  getContas,
   getLancamentos,
   getLancamentosPagina,
+  getTodosLancamentos,
   removerLancamento,
   type ParteDivisao,
   type PaginaLancamentos,
@@ -22,6 +24,14 @@ function formatarMoeda(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+function normalizar(s: string) {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
+const SEM_CATEGORIA = '__sem_categoria__'
 const ANO_ATUAL = new Date().getFullYear()
 
 export function ExtratoListPage() {
@@ -29,9 +39,13 @@ export function ExtratoListPage() {
   const [mesFiltro, setMesFiltro] = useState<number | null>(null)
   const [anoFiltro, setAnoFiltro] = useState(ANO_ATUAL)
   const [anoFiltroTexto, setAnoFiltroTexto] = useState(String(ANO_ATUAL))
+  const [busca, setBusca] = useState('')
+  const [categoriaFiltro, setCategoriaFiltro] = useState('')
+  const [contaFiltro, setContaFiltro] = useState('')
 
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [contas, setContas] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [carregandoMais, setCarregandoMais] = useState(false)
   const [cursor, setCursor] = useState<QueryDocumentSnapshot<DocumentData> | null>(null)
@@ -39,6 +53,8 @@ export function ExtratoListPage() {
   const [selecionado, setSelecionado] = useState<Lancamento | null>(null)
 
   const sentinelRef = useRef<HTMLDivElement>(null)
+
+  const filtrosAtivos = busca.trim() !== '' || categoriaFiltro !== '' || contaFiltro !== ''
 
   async function carregar() {
     if (!user) return
@@ -48,10 +64,17 @@ export function ExtratoListPage() {
     setTemMais(true)
 
     getCategorias(user.uid).then(setCategorias)
+    getContas(user.uid).then(setContas)
 
     if (mesFiltro) {
       getLancamentos(user.uid, mesFiltro, anoFiltro).then((l) => {
         setLancamentos([...l].sort((a, b) => b.data - a.data))
+        setTemMais(false)
+        setLoading(false)
+      })
+    } else if (filtrosAtivos) {
+      getTodosLancamentos(user.uid).then((l) => {
+        setLancamentos(l)
         setTemMais(false)
         setLoading(false)
       })
@@ -67,10 +90,10 @@ export function ExtratoListPage() {
 
   useEffect(() => {
     carregar()
-  }, [user, mesFiltro, anoFiltro])
+  }, [user, mesFiltro, anoFiltro, filtrosAtivos])
 
   const carregarMais = useCallback(async () => {
-    if (!user || mesFiltro || carregandoMais || !temMais) return
+    if (!user || mesFiltro || filtrosAtivos || carregandoMais || !temMais) return
     setCarregandoMais(true)
     const pagina = await getLancamentosPagina(user.uid, cursor)
     setLancamentos((prev) => [...prev, ...pagina.itens])
@@ -98,10 +121,22 @@ export function ExtratoListPage() {
     return map
   }, [categorias])
 
+  const lancamentosFiltrados = useMemo(() => {
+    if (!filtrosAtivos) return lancamentos
+    const buscaNorm = normalizar(busca.trim())
+    return lancamentos.filter((l) => {
+      if (buscaNorm && !normalizar(l.descricao).includes(buscaNorm)) return false
+      if (contaFiltro && l.conta !== contaFiltro) return false
+      if (categoriaFiltro === SEM_CATEGORIA && l.categoriaId) return false
+      if (categoriaFiltro && categoriaFiltro !== SEM_CATEGORIA && l.categoriaId !== categoriaFiltro) return false
+      return true
+    })
+  }, [lancamentos, filtrosAtivos, busca, categoriaFiltro, contaFiltro])
+
   const totais = useMemo(() => {
     let receita = 0
     let despesa = 0
-    for (const l of lancamentos) {
+    for (const l of lancamentosFiltrados) {
       const cat = l.categoriaId ? categoriasPorId.get(l.categoriaId) : undefined
       if (cat?.transferencia || cat?.grupo === 'bens') continue
       if (!cat) {
@@ -114,9 +149,9 @@ export function ExtratoListPage() {
       else despesa += ajustado
     }
     return { receita, despesa, saldo: receita + despesa }
-  }, [lancamentos, categoriasPorId])
+  }, [lancamentosFiltrados, categoriasPorId])
 
-  const grupos = useMemo(() => agruparPorDia(lancamentos), [lancamentos])
+  const grupos = useMemo(() => agruparPorDia(lancamentosFiltrados), [lancamentosFiltrados])
 
   async function salvarDetalhe(id: string, categoriaId: string, obs: string, descricao: string) {
     if (!user) return
@@ -172,7 +207,41 @@ export function ExtratoListPage() {
         )}
       </div>
 
-      {mesFiltro && (
+      <div className="row">
+        <input
+          placeholder="Buscar por descrição..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          style={{ flex: 1 }}
+        />
+      </div>
+      <div className="row">
+        <label style={{ flex: 1 }}>
+          Categoria
+          <select value={categoriaFiltro} onChange={(e) => setCategoriaFiltro(e.target.value)}>
+            <option value="">Todas</option>
+            <option value={SEM_CATEGORIA}>Verificar (sem categoria)</option>
+            {categorias.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nome}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label style={{ flex: 1 }}>
+          Conta
+          <select value={contaFiltro} onChange={(e) => setContaFiltro(e.target.value)}>
+            <option value="">Todas</option>
+            {contas.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {(mesFiltro || filtrosAtivos) && (
         <div className="card stat-row">
           <div>
             <p className="text-dim text-sm">Receita</p>
@@ -191,7 +260,7 @@ export function ExtratoListPage() {
 
       {loading ? (
         <p className="text-dim">Carregando...</p>
-      ) : lancamentos.length === 0 ? (
+      ) : lancamentosFiltrados.length === 0 ? (
         <p className="text-dim text-center">Nenhum lançamento encontrado.</p>
       ) : (
         <div>
@@ -263,7 +332,7 @@ export function ExtratoListPage() {
           )}
           {!mesFiltro && !temMais && (
             <p className="text-center text-dim text-sm" style={{ padding: 16 }}>
-              Fim do extrato.
+              {filtrosAtivos ? 'Fim dos resultados.' : 'Fim do extrato.'}
             </p>
           )}
         </div>

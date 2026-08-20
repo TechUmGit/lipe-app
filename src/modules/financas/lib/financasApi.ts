@@ -138,6 +138,13 @@ export async function getLancamentosPorAno(uid: string, ano: number): Promise<La
   return lancamentos.sort((a, b) => a.data - b.data)
 }
 
+/** Busca todos os lançamentos do usuário (sem paginação) — usado pra busca/filtro que precisa varrer tudo. */
+export async function getTodosLancamentos(uid: string): Promise<Lancamento[]> {
+  const snap = await getDocs(lancamentosCol(uid))
+  const lancamentos = snap.docs.map(mapLancamento)
+  return lancamentos.sort((a, b) => b.data - a.data)
+}
+
 export interface PaginaLancamentos {
   itens: Lancamento[]
   cursor: QueryDocumentSnapshot<DocumentData> | null
