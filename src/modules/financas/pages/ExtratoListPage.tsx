@@ -6,10 +6,12 @@ import { MESES } from '../components/MonthSwitcher'
 import { agruparPorDia } from '../lib/dateGroups'
 import {
   atualizarLancamento,
+  dividirLancamento,
   getCategorias,
   getLancamentos,
   getLancamentosPagina,
   removerLancamento,
+  type ParteDivisao,
   type PaginaLancamentos,
 } from '../lib/financasApi'
 import { valorResponsavel } from '../lib/taxas'
@@ -38,7 +40,7 @@ export function ExtratoListPage() {
 
   const sentinelRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
+  async function carregar() {
     if (!user) return
     setLoading(true)
     setLancamentos([])
@@ -61,6 +63,10 @@ export function ExtratoListPage() {
         setLoading(false)
       })
     }
+  }
+
+  useEffect(() => {
+    carregar()
   }, [user, mesFiltro, anoFiltro])
 
   const carregarMais = useCallback(async () => {
@@ -124,6 +130,12 @@ export function ExtratoListPage() {
     if (!user) return
     setLancamentos((prev) => prev.filter((l) => l.id !== id))
     await removerLancamento(user.uid, id)
+  }
+
+  async function dividir(lancamento: Lancamento, partes: ParteDivisao[]) {
+    if (!user) return
+    await dividirLancamento(user.uid, lancamento, partes)
+    await carregar()
   }
 
   return (
@@ -264,6 +276,7 @@ export function ExtratoListPage() {
           onClose={() => setSelecionado(null)}
           onSave={(categoriaId, obs, descricao) => salvarDetalhe(selecionado.id, categoriaId, obs, descricao)}
           onDelete={() => excluir(selecionado.id)}
+          onSplit={(partes) => dividir(selecionado, partes)}
         />
       )}
     </div>

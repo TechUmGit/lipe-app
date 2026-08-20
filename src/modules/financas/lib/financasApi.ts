@@ -167,6 +167,37 @@ export async function removerLancamento(uid: string, id: string) {
   await deleteDoc(doc(lancamentosCol(uid), id))
 }
 
+export interface ParteDivisao {
+  valor: number
+  descricao: string
+  categoriaId: string | null
+}
+
+/** Apaga o lançamento original e cria um novo pra cada parte (mesma conta/data). */
+export async function dividirLancamento(uid: string, original: Lancamento, partes: ParteDivisao[]) {
+  const batch = writeBatch(db)
+  batch.delete(doc(lancamentosCol(uid), original.id))
+  for (const p of partes) {
+    const ref = doc(lancamentosCol(uid))
+    const novo: Record<string, unknown> = {
+      conta: original.conta,
+      data: Timestamp.fromMillis(original.data),
+      valor: p.valor,
+      descricao: p.descricao,
+      categoriaId: p.categoriaId,
+      obs: '',
+      mes: original.mes,
+      ano: original.ano,
+      criadoEm: Timestamp.now(),
+    }
+    if (original.origem) novo.origem = original.origem
+    if (original.conciliado !== undefined) novo.conciliado = original.conciliado
+    if (original.pluggyTransactionId) novo.pluggyTransactionId = original.pluggyTransactionId
+    batch.set(ref, novo)
+  }
+  await batch.commit()
+}
+
 export async function getDreAnotacoesPorAno(uid: string, ano: number): Promise<DreAnotacao[]> {
   const q = query(dreAnotacoesCol(uid), where('ano', '==', ano))
   const snap = await getDocs(q)
