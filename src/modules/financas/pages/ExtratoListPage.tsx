@@ -241,6 +241,40 @@ export function ExtratoListPage() {
         </label>
       </div>
 
+      {filtrosAtivos && (
+        <div className="chip-grid">
+          {busca.trim() && (
+            <button type="button" className="chip active" onClick={() => setBusca('')}>
+              "{busca.trim()}" ✕
+            </button>
+          )}
+          {categoriaFiltro && (
+            <button type="button" className="chip active" onClick={() => setCategoriaFiltro('')}>
+              {categoriaFiltro === SEM_CATEGORIA
+                ? 'Verificar'
+                : (categoriasPorId.get(categoriaFiltro)?.nome ?? 'Categoria')}{' '}
+              ✕
+            </button>
+          )}
+          {contaFiltro && (
+            <button type="button" className="chip active" onClick={() => setContaFiltro('')}>
+              {contaFiltro} ✕
+            </button>
+          )}
+          <button
+            type="button"
+            className="chip"
+            onClick={() => {
+              setBusca('')
+              setCategoriaFiltro('')
+              setContaFiltro('')
+            }}
+          >
+            Limpar tudo
+          </button>
+        </div>
+      )}
+
       {(mesFiltro || filtrosAtivos) && (
         <div className="card stat-row">
           <div>
