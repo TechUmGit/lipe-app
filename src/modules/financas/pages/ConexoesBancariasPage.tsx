@@ -47,6 +47,10 @@ export function ConexoesBancariasPage() {
     setConexoes(c)
     setContasApp(ca)
     setLoading(false)
+
+    // o webhook só marca precisaSync — quem de fato sincroniza é o app, aqui
+    const pendente = c.find((cx) => cx.precisaSync && cx.contas.some((ct) => ct.contaNome))
+    if (pendente) rodarSync(pendente.itemId)
   }
 
   async function conectar(itemIdExistente?: string) {
@@ -57,7 +61,7 @@ export function ConexoesBancariasPage() {
       const connectToken = await criarConnectToken(itemIdExistente)
       await abrirPluggyConnect({
         connectToken,
-        connectorIds: [200], // MeuPluggy — único conector disponível fora de um plano pago da Pluggy
+        includeSandbox: true, // conectores de sandbox (ex: Pluggy Bank) ficam disponíveis sem plano pago
         updateItem: itemIdExistente,
         onSuccess: async (itemData) => {
           try {

@@ -112,12 +112,12 @@ export function ExtratoListPage() {
 
   const grupos = useMemo(() => agruparPorDia(lancamentos), [lancamentos])
 
-  async function salvarDetalhe(id: string, categoriaId: string, obs: string) {
+  async function salvarDetalhe(id: string, categoriaId: string, obs: string, descricao: string) {
     if (!user) return
     setLancamentos((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, categoriaId: categoriaId || null, obs } : l)),
+      prev.map((l) => (l.id === id ? { ...l, categoriaId: categoriaId || null, obs, descricao } : l)),
     )
-    await atualizarLancamento(user.uid, id, { categoriaId: categoriaId || null, obs })
+    await atualizarLancamento(user.uid, id, { categoriaId: categoriaId || null, obs, descricao })
   }
 
   async function excluir(id: string) {
@@ -262,7 +262,7 @@ export function ExtratoListPage() {
           lancamento={selecionado}
           categorias={categorias}
           onClose={() => setSelecionado(null)}
-          onSave={(categoriaId, obs) => salvarDetalhe(selecionado.id, categoriaId, obs)}
+          onSave={(categoriaId, obs, descricao) => salvarDetalhe(selecionado.id, categoriaId, obs, descricao)}
           onDelete={() => excluir(selecionado.id)}
         />
       )}

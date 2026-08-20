@@ -137,6 +137,7 @@ async function sincronizarItem(uid: string, itemId: string): Promise<SyncLog> {
     contas: contasAtualizadas,
     ultimoSyncEm: fimEm,
     atualizadoEm: fimEm,
+    precisaSync: false,
   })
 
   const log: SyncLog = {

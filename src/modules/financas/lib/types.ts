@@ -88,6 +88,8 @@ export interface ConexaoBancaria {
   criadoEm: number
   atualizadoEm: number
   ultimoSyncEm?: number
+  /** true quando o webhook avisou de uma atualização e a sincronização de fato ainda não rodou. */
+  precisaSync?: boolean
 }
 
 export interface SyncLog {

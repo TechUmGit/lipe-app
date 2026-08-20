@@ -23,11 +23,12 @@ export function LancamentoModal({
   lancamento: Lancamento
   categorias: Categoria[]
   onClose: () => void
-  onSave: (categoriaId: string, obs: string) => void
+  onSave: (categoriaId: string, obs: string, descricao: string) => void
   onDelete: () => void
 }) {
   const [categoriaId, setCategoriaId] = useState(lancamento.categoriaId ?? '')
   const [obs, setObs] = useState(lancamento.obs ?? '')
+  const [descricao, setDescricao] = useState(lancamento.descricao)
 
   const categoriasOrdenadas = GRUPOS_CATEGORIA.map((g) => ({
     ...g,
@@ -35,7 +36,7 @@ export function LancamentoModal({
   }))
 
   function salvar() {
-    onSave(categoriaId, obs)
+    onSave(categoriaId, obs, descricao.trim() || lancamento.descricao)
     onClose()
   }
 
@@ -65,12 +66,21 @@ export function LancamentoModal({
             {formatarMoeda(lancamento.valor)}
           </span>
         </div>
-        <p style={{ fontWeight: 600 }}>{lancamento.descricao}</p>
         <p className="text-dim text-sm row" style={{ gap: 4 }}>
           <origem.Icone size={13} strokeWidth={1.5} />
           {origem.texto}
         </p>
       </div>
+
+      <label>
+        Descrição
+        <input
+          type="text"
+          value={descricao}
+          onChange={(e) => setDescricao(e.target.value)}
+          style={{ fontWeight: 600 }}
+        />
+      </label>
 
       <label>
         Categoria

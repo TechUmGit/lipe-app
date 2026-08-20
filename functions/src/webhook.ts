@@ -2,10 +2,9 @@ import { onRequest } from 'firebase-functions/v2/https'
 import { logger } from 'firebase-functions'
 import { db } from './admin.js'
 import { buscarItem } from './pluggyClient.js'
-import { sincronizarItem } from './sync.js'
 import { PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET } from './secrets.js'
 import { REGION } from './config.js'
-import type { ConexaoBancaria, StatusConexao } from './types.js'
+import type { StatusConexao } from './types.js'
 
 function mapearStatus(status: string): StatusConexao {
   if (status === 'UPDATED') return 'conectado'
@@ -24,9 +23,15 @@ interface WebhookPayload {
  * (só um identificador, não é segredo) — pra saber o status real e a quem
  * pertence, sempre rebuscamos o item na API da Pluggy com nossas próprias
  * credenciais, em vez de confiar no payload recebido.
+ *
+ * Só atualiza status e marca `precisaSync` — não roda a sincronização aqui
+ * dentro. A Pluggy espera resposta em até 5s e uma conta com muitas
+ * transações facilmente estoura isso; quem sincroniza de fato é o app,
+ * automaticamente ao abrir a tela de conexões (vendo `precisaSync`) ou
+ * manualmente pelo botão "Sincronizar agora".
  */
 export const pluggyWebhook = onRequest(
-  { region: REGION, secrets: [PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET], timeoutSeconds: 300 },
+  { region: REGION, secrets: [PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET], timeoutSeconds: 30 },
   async (req, res) => {
     if (req.method !== 'POST') {
       res.status(405).send('method not allowed')
@@ -58,19 +63,13 @@ export const pluggyWebhook = onRequest(
       }
 
       const statusAtual = mapearStatus(item.status)
+      const precisaSync = payload.event === 'item/updated' || payload.event === 'transactions/created'
       await ref.update({
         status: statusAtual,
         erroMensagem: item.error?.message ?? null,
         atualizadoEm: Date.now(),
+        ...(precisaSync ? { precisaSync: true } : {}),
       })
-
-      if (payload.event === 'item/updated' || payload.event === 'transactions/created') {
-        const conexao = snap.data() as ConexaoBancaria
-        const temContaMapeada = conexao.contas.some((c) => c.contaNome)
-        if (temContaMapeada) {
-          await sincronizarItem(uid, itemId)
-        }
-      }
 
       res.status(200).send('ok')
     } catch (err) {
