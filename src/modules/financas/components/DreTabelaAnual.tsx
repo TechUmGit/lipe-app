@@ -28,6 +28,7 @@ export function DreTabelaAnual() {
     categoria: Categoria
     mes: number
     valor: number
+    lancamentos: Lancamento[]
   } | null>(null)
 
   useEffect(() => {
@@ -193,7 +194,16 @@ export function DreTabelaAnual() {
                                 className="dre-table-cell-click"
                                 style={{ color: cor, background: bg }}
                                 title={anot?.comentario || undefined}
-                                onClick={() => setCelulaSelecionada({ categoria: l.categoria, mes, valor: v })}
+                                onClick={() =>
+                                  setCelulaSelecionada({
+                                    categoria: l.categoria,
+                                    mes,
+                                    valor: v,
+                                    lancamentos: lancamentos
+                                      .filter((lc) => lc.categoriaId === l.categoria.id && lc.mes === mes)
+                                      .sort((a, b) => a.data - b.data),
+                                  })
+                                }
                               >
                                 {v !== 0 ? formatarMoeda(v) : '—'}
                               </td>
@@ -246,6 +256,7 @@ export function DreTabelaAnual() {
           mes={celulaSelecionada.mes}
           ano={ano}
           valor={celulaSelecionada.valor}
+          lancamentos={celulaSelecionada.lancamentos}
           anotacao={anotacoesPorChave.get(chaveAnotacao(celulaSelecionada.categoria.id, celulaSelecionada.mes))}
           onClose={() => setCelulaSelecionada(null)}
           onSave={salvarAnotacao}

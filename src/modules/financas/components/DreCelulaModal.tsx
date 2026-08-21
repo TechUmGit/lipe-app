@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Modal } from '../../../shared/components/Modal'
+import { valorResponsavel } from '../lib/taxas'
 import { MESES } from './MonthSwitcher'
-import type { Categoria, DreAnotacao, DreCor } from '../lib/types'
+import type { Categoria, DreAnotacao, DreCor, Lancamento } from '../lib/types'
 
 function formatarMoeda(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -12,6 +13,7 @@ export function DreCelulaModal({
   mes,
   ano,
   valor,
+  lancamentos,
   anotacao,
   onClose,
   onSave,
@@ -20,6 +22,7 @@ export function DreCelulaModal({
   mes: number
   ano: number
   valor: number
+  lancamentos: Lancamento[]
   anotacao: DreAnotacao | undefined
   onClose: () => void
   onSave: (dados: { comentario: string; cor: DreCor | null; destaque: boolean }) => void
@@ -40,6 +43,40 @@ export function DreCelulaModal({
         <p className="text-dim text-sm">
           {MESES[mes - 1]} {ano} · {formatarMoeda(valor)}
         </p>
+      </div>
+
+      <div className="stack" style={{ gap: 6 }}>
+        <span className="text-dim text-sm">
+          {lancamentos.length === 0
+            ? 'Nenhum lançamento nesse mês'
+            : `${lancamentos.length} lançamento(s) somam esse valor`}
+        </span>
+        {lancamentos.length > 0 && (
+          <div className="stack" style={{ gap: 0 }}>
+            {lancamentos.map((l) => {
+              const ajustado = valorResponsavel(l, categoria)
+              return (
+                <div key={l.id} className="row-between text-sm" style={{ padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {l.descricao}
+                    </p>
+                    <p className="text-dim text-sm">{new Date(l.data).toLocaleDateString('pt-BR')}</p>
+                  </div>
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap',
+                      color: ajustado < 0 ? 'var(--text)' : 'var(--success)',
+                    }}
+                  >
+                    {formatarMoeda(ajustado)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <label>
