@@ -3,6 +3,7 @@ import { useAuth } from '../../../core/AuthContext'
 import { DonutChart } from '../components/DonutChart'
 import { MESES, MonthSwitcher } from '../components/MonthSwitcher'
 import { getCategorias, getLancamentos } from '../lib/financasApi'
+import { useFinancasRefresh } from '../lib/FinancasRefreshContext'
 import { valorResponsavel } from '../lib/taxas'
 import { useMesAno } from '../lib/useMesAno'
 import type { Categoria, Lancamento } from '../lib/types'
@@ -20,6 +21,7 @@ const CORES = {
 export function ResumoPage() {
   const { user } = useAuth()
   const { mes, ano, setMesAno } = useMesAno()
+  const { refreshKey } = useFinancasRefresh()
   const [loading, setLoading] = useState(true)
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -32,7 +34,7 @@ export function ResumoPage() {
       setCategorias(c)
       setLoading(false)
     })
-  }, [user, mes, ano])
+  }, [user, mes, ano, refreshKey])
 
   const categoriasPorId = useMemo(() => {
     const map = new Map<string, Categoria>()

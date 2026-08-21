@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { getCategorias, getDreAnotacoesPorAno, getLancamentosPorAno, salvarDreAnotacao } from '../lib/financasApi'
+import { useFinancasRefresh } from '../lib/FinancasRefreshContext'
 import { orcamentoVigente, valorResponsavel } from '../lib/taxas'
 import { GRUPOS_CATEGORIA, type Categoria, type DreAnotacao, type DreCor, type Lancamento } from '../lib/types'
 import { DreCelulaModal } from './DreCelulaModal'
@@ -19,6 +20,7 @@ function chaveAnotacao(categoriaId: string, mes: number) {
 
 export function DreTabelaAnual() {
   const { user } = useAuth()
+  const { refreshKey } = useFinancasRefresh()
   const [ano, setAno] = useState(new Date().getFullYear())
   const [loading, setLoading] = useState(true)
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -44,7 +46,7 @@ export function DreTabelaAnual() {
       setAnotacoes(a)
       setLoading(false)
     })
-  }, [user, ano])
+  }, [user, ano, refreshKey])
 
   const anotacoesPorChave = useMemo(() => {
     const map = new Map<string, DreAnotacao>()

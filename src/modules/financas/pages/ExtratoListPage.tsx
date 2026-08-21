@@ -16,6 +16,7 @@ import {
   type ParteDivisao,
   type PaginaLancamentos,
 } from '../lib/financasApi'
+import { useFinancasRefresh } from '../lib/FinancasRefreshContext'
 import { valorResponsavel } from '../lib/taxas'
 import type { Categoria, Lancamento } from '../lib/types'
 import type { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore'
@@ -36,6 +37,7 @@ const ANO_ATUAL = new Date().getFullYear()
 
 export function ExtratoListPage() {
   const { user } = useAuth()
+  const { notificarMudanca } = useFinancasRefresh()
   const [mesFiltro, setMesFiltro] = useState<number | null>(null)
   const [anoFiltro, setAnoFiltro] = useState(ANO_ATUAL)
   const [anoFiltroTexto, setAnoFiltroTexto] = useState(String(ANO_ATUAL))
@@ -159,18 +161,21 @@ export function ExtratoListPage() {
       prev.map((l) => (l.id === id ? { ...l, categoriaId: categoriaId || null, obs, descricao } : l)),
     )
     await atualizarLancamento(user.uid, id, { categoriaId: categoriaId || null, obs, descricao })
+    notificarMudanca()
   }
 
   async function excluir(id: string) {
     if (!user) return
     setLancamentos((prev) => prev.filter((l) => l.id !== id))
     await removerLancamento(user.uid, id)
+    notificarMudanca()
   }
 
   async function dividir(lancamento: Lancamento, partes: ParteDivisao[]) {
     if (!user) return
     await dividirLancamento(user.uid, lancamento, partes)
     await carregar()
+    notificarMudanca()
   }
 
   return (
