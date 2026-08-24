@@ -11,6 +11,7 @@ import { FinancasLayout } from './modules/financas/FinancasLayout'
 import { ResumoPage } from './modules/financas/pages/ResumoPage'
 import { ExtratoListPage } from './modules/financas/pages/ExtratoListPage'
 import { DREPage } from './modules/financas/pages/DREPage'
+import { ProjetosPage } from './modules/financas/pages/ProjetosPage'
 import { ImportarExtratoPage } from './modules/financas/pages/ImportarExtratoPage'
 import { CategoriasPage } from './modules/financas/pages/CategoriasPage'
 import { ConexoesBancariasPage } from './modules/financas/pages/ConexoesBancariasPage'
@@ -63,6 +64,7 @@ function App() {
         <Route index element={<ResumoPage />} />
         <Route path="extrato" element={<ExtratoListPage />} />
         <Route path="dre" element={<DREPage />} />
+        <Route path="projetos" element={<ProjetosPage />} />
       </Route>
 
       <Route
