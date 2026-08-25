@@ -520,3 +520,9 @@ body.wide #root {
     grid-template-columns: 1fr;
   }
 }
+
+.projetos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}

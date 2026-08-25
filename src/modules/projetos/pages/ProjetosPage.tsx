@@ -2,6 +2,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { Topbar } from '../../../shared/components/Topbar'
+import { useIsDesktop } from '../../../shared/hooks/useIsDesktop'
 import { ProjetoModal } from '../components/ProjetoModal'
 import { atualizarProjeto, criarProjeto, getProjetos, removerProjeto } from '../lib/projetosApi'
 import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, valorNoMes, valoresDoAno } from '../lib/calculo'
@@ -15,11 +16,17 @@ function formatarMoeda(v: number) {
 
 export function ProjetosPage() {
   const { user } = useAuth()
+  const isDesktop = useIsDesktop()
   const [loading, setLoading] = useState(true)
   const [projetos, setProjetos] = useState<Projeto[]>([])
   const [editando, setEditando] = useState<Projeto | 'novo' | null>(null)
   const [ano, setAno] = useState(new Date().getFullYear())
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    document.body.classList.toggle('wide', isDesktop)
+    return () => document.body.classList.remove('wide')
+  }, [isDesktop])
 
   useEffect(() => {
     carregar()
@@ -117,7 +124,7 @@ export function ProjetosPage() {
                 return (
                   <section key={status} className="stack" style={{ gap: 6 }}>
                     <h3>{STATUS_PROJETO_LABEL[status]}</h3>
-                    <div className="stack" style={{ gap: 6 }}>
+                    <div className="projetos-grid">
                       {doGrupo.map((p) => {
                         const concluidas = p.subtarefas.filter((s) => s.concluida).length
                         const temSubtarefas = p.subtarefas.length > 0
