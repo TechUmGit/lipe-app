@@ -75,6 +75,11 @@ export function ProjetosPage() {
 
   const ativos = useMemo(() => projetos.filter((p) => p.status !== 'cancelado'), [projetos])
 
+  const atividades = useMemo(() => {
+    const itens = ativos.flatMap((p) => p.subtarefas.map((s) => ({ projeto: p, subtarefa: s })))
+    return itens.sort((a, b) => Number(a.subtarefa.concluida) - Number(b.subtarefa.concluida))
+  }, [ativos])
+
   const tabela = useMemo(() => {
     const linhas = ativos.map((p) => ({ projeto: p, meses: valoresDoAno(p, ano) }))
     const grupos = STATUS_PROJETO_ORDEM.filter((s) => s !== 'cancelado').map((status) => {
@@ -201,6 +206,43 @@ export function ProjetosPage() {
               })}
 
               {projetos.length === 0 && <p className="text-dim text-center">Nenhum projeto lançado ainda.</p>}
+
+              <div className="stack" style={{ gap: 6 }}>
+                <h3>Lista de atividades</h3>
+                {atividades.length === 0 ? (
+                  <p className="text-dim text-sm">Nenhuma subtarefa lançada ainda.</p>
+                ) : (
+                  <div className="card stack" style={{ gap: 8 }}>
+                    {atividades.map(({ projeto, subtarefa }) => (
+                      <label
+                        key={subtarefa.id}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={subtarefa.concluida}
+                          onChange={() => alternarSubtarefaInline(projeto, subtarefa.id)}
+                          style={{ width: 18, height: 18, flexShrink: 0 }}
+                        />
+                        <span
+                          className="text-sm"
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            textDecoration: subtarefa.concluida ? 'line-through' : undefined,
+                            opacity: subtarefa.concluida ? 0.6 : 1,
+                          }}
+                        >
+                          {subtarefa.nome}
+                        </span>
+                        <span className="text-dim text-sm" style={{ whiteSpace: 'nowrap' }}>
+                          {projeto.nome}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="row-between">
                 <h2 style={{ margin: 0 }}>Projeção {ano}</h2>
