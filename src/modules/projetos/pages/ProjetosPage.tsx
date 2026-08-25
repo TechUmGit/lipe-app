@@ -5,13 +5,24 @@ import { Topbar } from '../../../shared/components/Topbar'
 import { useIsDesktop } from '../../../shared/hooks/useIsDesktop'
 import { ProjetoModal } from '../components/ProjetoModal'
 import { atualizarProjeto, criarProjeto, getProjetos, removerProjeto } from '../lib/projetosApi'
-import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, valorNoMes, valoresDoAno } from '../lib/calculo'
+import {
+  STATUS_PROJETO_LABEL,
+  STATUS_PROJETO_ORDEM,
+  compararAtividades,
+  subtarefaVencida,
+  valorNoMes,
+  valoresDoAno,
+} from '../lib/calculo'
 import type { NovoProjeto, Projeto } from '../lib/types'
 
 const MESES_CURTO = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
 function formatarMoeda(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function formatarData(ms: number) {
+  return new Date(ms).toLocaleDateString('pt-BR')
 }
 
 export function ProjetosPage() {
@@ -77,7 +88,7 @@ export function ProjetosPage() {
 
   const atividades = useMemo(() => {
     const itens = ativos.flatMap((p) => p.subtarefas.map((s) => ({ projeto: p, subtarefa: s })))
-    return itens.sort((a, b) => Number(a.subtarefa.concluida) - Number(b.subtarefa.concluida))
+    return itens.sort((a, b) => compararAtividades(a.subtarefa, b.subtarefa))
   }, [ativos])
 
   const tabela = useMemo(() => {
@@ -172,29 +183,46 @@ export function ProjetosPage() {
                                 className="stack"
                                 style={{ gap: 6, padding: '0 14px 12px', borderTop: '1px solid var(--border)', marginTop: -1, paddingTop: 8 }}
                               >
-                                {p.subtarefas.map((s) => (
-                                  <label
-                                    key={s.id}
-                                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, cursor: 'pointer' }}
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={s.concluida}
-                                      onChange={() => alternarSubtarefaInline(p, s.id)}
-                                      style={{ width: 18, height: 18, flexShrink: 0 }}
-                                    />
-                                    <span
-                                      className="text-sm"
-                                      style={{
-                                        textDecoration: s.concluida ? 'line-through' : undefined,
-                                        opacity: s.concluida ? 0.6 : 1,
-                                      }}
+                                {[...p.subtarefas].sort(compararAtividades).map((s) => {
+                                  const vencida = subtarefaVencida(s)
+                                  return (
+                                    <label
+                                      key={s.id}
+                                      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+                                      onClick={(e) => e.stopPropagation()}
                                     >
-                                      {s.nome}
-                                    </span>
-                                  </label>
-                                ))}
+                                      <input
+                                        type="checkbox"
+                                        checked={s.concluida}
+                                        onChange={() => alternarSubtarefaInline(p, s.id)}
+                                        style={{ width: 18, height: 18, flexShrink: 0 }}
+                                      />
+                                      <span
+                                        className="text-sm"
+                                        style={{
+                                          flex: 1,
+                                          minWidth: 0,
+                                          textDecoration: s.concluida ? 'line-through' : undefined,
+                                          opacity: s.concluida ? 0.6 : 1,
+                                          color: vencida ? 'var(--danger)' : undefined,
+                                        }}
+                                      >
+                                        {s.nome}
+                                      </span>
+                                      {s.vencimento && (
+                                        <span
+                                          className="text-sm"
+                                          style={{
+                                            whiteSpace: 'nowrap',
+                                            color: vencida ? 'var(--danger)' : 'var(--text-dim)',
+                                          }}
+                                        >
+                                          {formatarData(s.vencimento)}
+                                        </span>
+                                      )}
+                                    </label>
+                                  )
+                                })}
                               </div>
                             )}
                           </div>
@@ -213,33 +241,45 @@ export function ProjetosPage() {
                   <p className="text-dim text-sm">Nenhuma subtarefa lançada ainda.</p>
                 ) : (
                   <div className="card stack" style={{ gap: 8 }}>
-                    {atividades.map(({ projeto, subtarefa }) => (
-                      <label
-                        key={subtarefa.id}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 8, cursor: 'pointer' }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={subtarefa.concluida}
-                          onChange={() => alternarSubtarefaInline(projeto, subtarefa.id)}
-                          style={{ width: 18, height: 18, flexShrink: 0 }}
-                        />
-                        <span
-                          className="text-sm"
-                          style={{
-                            flex: 1,
-                            minWidth: 0,
-                            textDecoration: subtarefa.concluida ? 'line-through' : undefined,
-                            opacity: subtarefa.concluida ? 0.6 : 1,
-                          }}
+                    {atividades.map(({ projeto, subtarefa }) => {
+                      const vencida = subtarefaVencida(subtarefa)
+                      return (
+                        <label
+                          key={subtarefa.id}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, cursor: 'pointer' }}
                         >
-                          {subtarefa.nome}
-                        </span>
-                        <span className="text-dim text-sm" style={{ whiteSpace: 'nowrap' }}>
-                          {projeto.nome}
-                        </span>
-                      </label>
-                    ))}
+                          <input
+                            type="checkbox"
+                            checked={subtarefa.concluida}
+                            onChange={() => alternarSubtarefaInline(projeto, subtarefa.id)}
+                            style={{ width: 18, height: 18, flexShrink: 0 }}
+                          />
+                          <span
+                            className="text-sm"
+                            style={{
+                              flex: 1,
+                              minWidth: 0,
+                              textDecoration: subtarefa.concluida ? 'line-through' : undefined,
+                              opacity: subtarefa.concluida ? 0.6 : 1,
+                              color: vencida ? 'var(--danger)' : undefined,
+                            }}
+                          >
+                            {subtarefa.nome}
+                          </span>
+                          {subtarefa.vencimento && (
+                            <span
+                              className="text-sm"
+                              style={{ whiteSpace: 'nowrap', color: vencida ? 'var(--danger)' : 'var(--text-dim)' }}
+                            >
+                              {formatarData(subtarefa.vencimento)}
+                            </span>
+                          )}
+                          <span className="text-dim text-sm" style={{ whiteSpace: 'nowrap' }}>
+                            {projeto.nome}
+                          </span>
+                        </label>
+                      )
+                    })}
                   </div>
                 )}
               </div>

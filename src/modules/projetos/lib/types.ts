@@ -9,6 +9,7 @@ export interface Subtarefa {
   id: string
   nome: string
   concluida: boolean
+  vencimento?: number
 }
 
 export interface Projeto {

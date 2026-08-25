@@ -1,7 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Modal } from '../../../shared/components/Modal'
-import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM } from '../lib/calculo'
+import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, compararAtividades, subtarefaVencida } from '../lib/calculo'
 import type { MesAnoRef, NovoProjeto, Projeto, Subtarefa } from '../lib/types'
 
 const MESES = [
@@ -16,6 +16,15 @@ function paraInputMonth(m: MesAnoRef) {
 function deInputMonth(valor: string): MesAnoRef {
   const [ano, mes] = valor.split('-').map(Number)
   return { mes, ano }
+}
+
+function paraInputDate(ms: number) {
+  return new Date(ms).toISOString().slice(0, 10)
+}
+
+function deInputDate(valor: string) {
+  const [ano, mes, dia] = valor.split('-').map(Number)
+  return new Date(ano, mes - 1, dia).getTime()
 }
 
 function hoje(): MesAnoRef {
@@ -59,6 +68,7 @@ export function ProjetoModal({
   )
   const [subtarefas, setSubtarefas] = useState<Subtarefa[]>(base.subtarefas)
   const [novaSubtarefa, setNovaSubtarefa] = useState('')
+  const [novaSubtarefaVencimento, setNovaSubtarefaVencimento] = useState('')
   const [obs, setObs] = useState(base.obs ?? '')
 
   function atualizarValorMes(i: number, texto: string) {
@@ -68,12 +78,20 @@ export function ProjetoModal({
   function adicionarSubtarefa() {
     const nomeSub = novaSubtarefa.trim()
     if (!nomeSub) return
-    setSubtarefas((prev) => [...prev, { id: crypto.randomUUID(), nome: nomeSub, concluida: false }])
+    const vencimento = novaSubtarefaVencimento ? deInputDate(novaSubtarefaVencimento) : undefined
+    setSubtarefas((prev) => [...prev, { id: crypto.randomUUID(), nome: nomeSub, concluida: false, vencimento }])
     setNovaSubtarefa('')
+    setNovaSubtarefaVencimento('')
   }
 
   function alternarSubtarefa(id: string) {
     setSubtarefas((prev) => prev.map((s) => (s.id === id ? { ...s, concluida: !s.concluida } : s)))
+  }
+
+  function atualizarVencimentoSubtarefa(id: string, valor: string) {
+    setSubtarefas((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, vencimento: valor ? deInputDate(valor) : undefined } : s)),
+    )
   }
 
   function removerSubtarefa(id: string) {
@@ -188,36 +206,49 @@ export function ProjetoModal({
         <span className="text-dim text-sm">Subtarefas</span>
         {subtarefas.length > 0 && (
           <div className="stack" style={{ gap: 6 }}>
-            {subtarefas.map((s) => (
-              <div key={s.id} className="row-between card" style={{ padding: '8px 12px' }}>
-                <label
-                  className="row"
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, cursor: 'pointer' }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={s.concluida}
-                    onChange={() => alternarSubtarefa(s.id)}
-                    style={{ width: 18, height: 18, flexShrink: 0 }}
-                  />
-                  <span
-                    className="text-sm"
-                    style={{ textDecoration: s.concluida ? 'line-through' : undefined, opacity: s.concluida ? 0.6 : 1 }}
+            {[...subtarefas].sort(compararAtividades).map((s) => {
+              const vencida = subtarefaVencida(s)
+              return (
+                <div key={s.id} className="row-between card" style={{ padding: '8px 12px' }}>
+                  <label
+                    className="row"
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, cursor: 'pointer' }}
                   >
-                    {s.nome}
-                  </span>
-                </label>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  style={{ padding: '4px 8px' }}
-                  onClick={() => removerSubtarefa(s.id)}
-                  aria-label="Remover subtarefa"
-                >
-                  <Trash2 size={15} strokeWidth={1.5} />
-                </button>
-              </div>
-            ))}
+                    <input
+                      type="checkbox"
+                      checked={s.concluida}
+                      onChange={() => alternarSubtarefa(s.id)}
+                      style={{ width: 18, height: 18, flexShrink: 0 }}
+                    />
+                    <span
+                      className="text-sm"
+                      style={{
+                        textDecoration: s.concluida ? 'line-through' : undefined,
+                        opacity: s.concluida ? 0.6 : 1,
+                        color: vencida ? 'var(--danger)' : undefined,
+                      }}
+                    >
+                      {s.nome}
+                    </span>
+                  </label>
+                  <input
+                    type="date"
+                    value={s.vencimento ? paraInputDate(s.vencimento) : ''}
+                    onChange={(e) => atualizarVencimentoSubtarefa(s.id, e.target.value)}
+                    style={{ width: 150, color: vencida ? 'var(--danger)' : undefined }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ padding: '4px 8px' }}
+                    onClick={() => removerSubtarefa(s.id)}
+                    aria-label="Remover subtarefa"
+                  >
+                    <Trash2 size={15} strokeWidth={1.5} />
+                  </button>
+                </div>
+              )
+            })}
           </div>
         )}
         <div className="row">
@@ -231,6 +262,13 @@ export function ProjetoModal({
                 adicionarSubtarefa()
               }
             }}
+          />
+          <input
+            type="date"
+            value={novaSubtarefaVencimento}
+            onChange={(e) => setNovaSubtarefaVencimento(e.target.value)}
+            style={{ width: 150 }}
+            aria-label="Vencimento da nova subtarefa"
           />
           <button type="button" className="btn" onClick={adicionarSubtarefa} aria-label="Adicionar subtarefa">
             <Plus size={16} strokeWidth={1.5} />

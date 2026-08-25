@@ -1,4 +1,4 @@
-import type { Projeto } from './types'
+import type { Projeto, Subtarefa } from './types'
 
 export const STATUS_PROJETO_LABEL: Record<Projeto['status'], string> = {
   negociacao: 'Em negociação',
@@ -30,4 +30,20 @@ export function valorNoMes(p: Pick<Projeto, 'dataInicio' | 'dataFim' | 'valoresP
 
 export function valoresDoAno(p: Projeto, ano: number): number[] {
   return new Array(12).fill(0).map((_, i) => valorNoMes(p, i + 1, ano))
+}
+
+export function subtarefaVencida(s: Pick<Subtarefa, 'concluida' | 'vencimento'>): boolean {
+  if (s.concluida || !s.vencimento) return false
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+  return s.vencimento < hoje.getTime()
+}
+
+/** Pendentes antes de concluídas; dentro de cada grupo, vencimento mais próximo primeiro (sem data, por último). */
+export function compararAtividades(a: Subtarefa, b: Subtarefa): number {
+  const porStatus = Number(a.concluida) - Number(b.concluida)
+  if (porStatus !== 0) return porStatus
+  const va = a.vencimento ?? Infinity
+  const vb = b.vencimento ?? Infinity
+  return va - vb
 }
