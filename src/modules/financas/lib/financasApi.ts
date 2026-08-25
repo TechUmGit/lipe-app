@@ -20,7 +20,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../../../core/firebase'
 import { CATEGORIAS_SEED, CATEGORIA_TRANSFERENCIA_NOME, CONTAS_SEED } from './categoriasSeed'
-import type { Categoria, DreAnotacao, DreCor, Lancamento, NovoLancamento, NovoProjeto, Projeto } from './types'
+import type { Categoria, DreAnotacao, DreCor, Lancamento, NovoLancamento } from './types'
 
 function mapLancamento(d: QueryDocumentSnapshot<DocumentData>): Lancamento {
   const data = d.data()
@@ -59,10 +59,6 @@ function lancamentosCol(uid: string) {
 
 function dreAnotacoesCol(uid: string) {
   return collection(db, 'users', uid, 'financas_dre_anotacoes')
-}
-
-function projetosCol(uid: string) {
-  return collection(db, 'users', uid, 'financas_projetos')
 }
 
 function dreAnotacaoId(categoriaId: string, ano: number, mes: number) {
@@ -233,22 +229,4 @@ export async function salvarDreAnotacao(
     cor: dados.cor,
     destaque: dados.destaque,
   })
-}
-
-export async function getProjetos(uid: string): Promise<Projeto[]> {
-  const snap = await getDocs(projetosCol(uid))
-  const projetos = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Projeto)
-  return projetos.sort((a, b) => b.criadoEm - a.criadoEm)
-}
-
-export async function criarProjeto(uid: string, dados: NovoProjeto) {
-  await addDoc(projetosCol(uid), { ...dados, criadoEm: Date.now() })
-}
-
-export async function atualizarProjeto(uid: string, id: string, dados: Partial<Projeto>) {
-  await updateDoc(doc(projetosCol(uid), id), dados)
-}
-
-export async function removerProjeto(uid: string, id: string) {
-  await deleteDoc(doc(projetosCol(uid), id))
 }

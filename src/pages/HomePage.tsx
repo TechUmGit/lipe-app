@@ -1,4 +1,4 @@
-import { Dumbbell, Headphones, Wallet, type LucideIcon } from 'lucide-react'
+import { Briefcase, Dumbbell, Headphones, Wallet, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Topbar } from '../shared/components/Topbar'
 
@@ -22,6 +22,12 @@ const apps: AppEntry[] = [
     icon: Dumbbell,
     title: 'Treino',
     description: 'Sua série, seu equipamento, seu progresso.',
+  },
+  {
+    to: '/projetos',
+    icon: Briefcase,
+    title: 'Projetos',
+    description: 'Negociações, contratos fechados e receita esperada.',
   },
   {
     to: '/audiobooks',

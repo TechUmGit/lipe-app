@@ -1,9 +1,13 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Modal } from '../../../shared/components/Modal'
-import { MESES } from './MonthSwitcher'
-import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM } from '../lib/projetos'
+import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM } from '../lib/calculo'
 import type { MesAnoRef, NovoProjeto, Projeto, Subtarefa } from '../lib/types'
+
+const MESES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+]
 
 function paraInputMonth(m: MesAnoRef) {
   return `${m.ano}-${String(m.mes).padStart(2, '0')}`
@@ -186,8 +190,16 @@ export function ProjetoModal({
           <div className="stack" style={{ gap: 6 }}>
             {subtarefas.map((s) => (
               <div key={s.id} className="row-between card" style={{ padding: '8px 12px' }}>
-                <label className="row" style={{ gap: 8, flex: 1, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={s.concluida} onChange={() => alternarSubtarefa(s.id)} />
+                <label
+                  className="row"
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, cursor: 'pointer' }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={s.concluida}
+                    onChange={() => alternarSubtarefa(s.id)}
+                    style={{ width: 18, height: 18, flexShrink: 0 }}
+                  />
                   <span
                     className="text-sm"
                     style={{ textDecoration: s.concluida ? 'line-through' : undefined, opacity: s.concluida ? 0.6 : 1 }}

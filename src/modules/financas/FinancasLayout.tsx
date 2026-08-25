@@ -73,9 +73,6 @@ export function FinancasLayout() {
           <NavLink to="/financas/dre" className={({ isActive }) => (isActive ? 'active' : '')}>
             DRE
           </NavLink>
-          <NavLink to="/financas/projetos" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Projetos
-          </NavLink>
         </nav>
       )}
       <div className="page">
