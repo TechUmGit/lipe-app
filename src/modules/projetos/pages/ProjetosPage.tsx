@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { Topbar } from '../../../shared/components/Topbar'
 import { useIsDesktop } from '../../../shared/hooks/useIsDesktop'
@@ -33,6 +33,7 @@ export function ProjetosPage() {
   const [editando, setEditando] = useState<Projeto | 'novo' | null>(null)
   const [ano, setAno] = useState(new Date().getFullYear())
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
+  const [gruposColapsados, setGruposColapsados] = useState<Set<Projeto['status']>>(new Set())
 
   useEffect(() => {
     document.body.classList.toggle('wide', isDesktop)
@@ -71,6 +72,15 @@ export function ProjetosPage() {
       const novo = new Set(prev)
       if (novo.has(id)) novo.delete(id)
       else novo.add(id)
+      return novo
+    })
+  }
+
+  function alternarGrupoColapsado(status: Projeto['status']) {
+    setGruposColapsados((prev) => {
+      const novo = new Set(prev)
+      if (novo.has(status)) novo.delete(status)
+      else novo.add(status)
       return novo
     })
   }
@@ -314,27 +324,46 @@ export function ProjetosPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {tabela.grupos.map(
-                      (g) =>
-                        g.linhas.length > 0 && (
-                          <tr key={g.status} className="dre-table-grupo">
-                            <td>{STATUS_PROJETO_LABEL[g.status]}</td>
+                    {tabela.grupos.map((g) => {
+                      if (g.linhas.length === 0) return null
+                      const colapsado = gruposColapsados.has(g.status)
+                      return (
+                        <Fragment key={g.status}>
+                          <tr
+                            className="dre-table-grupo"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => alternarGrupoColapsado(g.status)}
+                          >
+                            <td>
+                              <span className="row" style={{ gap: 6, alignItems: 'center' }}>
+                                <ChevronDown
+                                  size={16}
+                                  strokeWidth={1.5}
+                                  style={{
+                                    transform: colapsado ? 'rotate(-90deg)' : undefined,
+                                    transition: 'transform 0.15s',
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                {STATUS_PROJETO_LABEL[g.status]}
+                              </span>
+                            </td>
                             {g.mesesSubtotal.map((v, i) => (
                               <td key={i}>{v !== 0 ? formatarMoeda(v) : '—'}</td>
                             ))}
                           </tr>
-                        ),
-                    )}
-                    {tabela.grupos.flatMap((g) =>
-                      g.linhas.map((l) => (
-                        <tr key={l.projeto.id}>
-                          <td>{l.projeto.nome}</td>
-                          {l.meses.map((v, i) => (
-                            <td key={i}>{v !== 0 ? formatarMoeda(v) : '—'}</td>
-                          ))}
-                        </tr>
-                      )),
-                    )}
+                          {!colapsado &&
+                            g.linhas.map((l) => (
+                              <tr key={l.projeto.id}>
+                                <td>{l.projeto.nome}</td>
+                                {l.meses.map((v, i) => (
+                                  <td key={i}>{v !== 0 ? formatarMoeda(v) : '—'}</td>
+                                ))}
+                              </tr>
+                            ))}
+                        </Fragment>
+                      )
+                    })}
                     <tr className="dre-table-resultado">
                       <td>Total</td>
                       {tabela.totalPorMes.map((v, i) => (
