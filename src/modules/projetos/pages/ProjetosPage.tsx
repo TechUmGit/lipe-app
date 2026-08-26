@@ -25,6 +25,13 @@ function formatarData(ms: number) {
   return new Date(ms).toLocaleDateString('pt-BR')
 }
 
+function normalizar(s: string) {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
 export function ProjetosPage() {
   const { user } = useAuth()
   const isDesktop = useIsDesktop()
@@ -34,6 +41,7 @@ export function ProjetosPage() {
   const [ano, setAno] = useState(new Date().getFullYear())
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
   const [gruposColapsados, setGruposColapsados] = useState<Set<Projeto['status']>>(new Set())
+  const [busca, setBusca] = useState('')
 
   useEffect(() => {
     document.body.classList.toggle('wide', isDesktop)
@@ -94,7 +102,16 @@ export function ProjetosPage() {
     await atualizarProjeto(user.uid, p.id, { subtarefas: novasSubtarefas })
   }
 
-  const ativos = useMemo(() => projetos.filter((p) => p.status !== 'cancelado'), [projetos])
+  const projetosFiltrados = useMemo(() => {
+    const termo = normalizar(busca.trim())
+    if (!termo) return projetos
+    return projetos.filter((p) => normalizar(p.nome).includes(termo))
+  }, [projetos, busca])
+
+  const ativos = useMemo(
+    () => projetosFiltrados.filter((p) => p.status !== 'cancelado'),
+    [projetosFiltrados],
+  )
 
   const atividades = useMemo(() => {
     const itens = ativos.flatMap((p) => p.subtarefas.map((s) => ({ projeto: p, subtarefa: s })))
@@ -140,12 +157,18 @@ export function ProjetosPage() {
             </button>
           </div>
 
+          <input
+            placeholder="Buscar projeto..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
+
           {loading ? (
             <p className="text-dim">Carregando...</p>
           ) : (
             <>
               {STATUS_PROJETO_ORDEM.map((status) => {
-                const doGrupo = projetos.filter((p) => p.status === status)
+                const doGrupo = projetosFiltrados.filter((p) => p.status === status)
                 if (doGrupo.length === 0) return null
                 return (
                   <section key={status} className="stack" style={{ gap: 6 }}>
@@ -244,6 +267,9 @@ export function ProjetosPage() {
               })}
 
               {projetos.length === 0 && <p className="text-dim text-center">Nenhum projeto lançado ainda.</p>}
+              {projetos.length > 0 && projetosFiltrados.length === 0 && (
+                <p className="text-dim text-center">Nenhum projeto encontrado para "{busca.trim()}".</p>
+              )}
 
               <div className="stack" style={{ gap: 6 }}>
                 <h3>Lista de atividades</h3>
