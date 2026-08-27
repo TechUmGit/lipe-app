@@ -1,4 +1,4 @@
-export type StatusProjeto = 'negociacao' | 'fechado' | 'cancelado'
+export type StatusProjeto = 'negociacao' | 'em_espera' | 'fechado' | 'cancelado'
 
 export interface MesAnoRef {
   mes: number

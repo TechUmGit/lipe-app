@@ -2,11 +2,12 @@ import type { Projeto, Subtarefa } from './types'
 
 export const STATUS_PROJETO_LABEL: Record<Projeto['status'], string> = {
   negociacao: 'Em negociação',
+  em_espera: 'Em espera',
   fechado: 'Fechado',
   cancelado: 'Cancelado',
 }
 
-export const STATUS_PROJETO_ORDEM: Projeto['status'][] = ['negociacao', 'fechado', 'cancelado']
+export const STATUS_PROJETO_ORDEM: Projeto['status'][] = ['negociacao', 'em_espera', 'fechado', 'cancelado']
 
 function chaveAbsoluta(mes: number, ano: number) {
   return ano * 12 + mes
