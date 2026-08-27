@@ -566,7 +566,7 @@ body.wide #root {
   font-size: 13px;
 }
 
-@media (min-width: 600px) {
+@media (min-width: 900px) {
   .atividades-grid {
     display: grid;
     grid-template-columns: auto 1fr auto auto;
