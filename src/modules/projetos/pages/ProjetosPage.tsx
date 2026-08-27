@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Kanban, List, Plus } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { Topbar } from '../../../shared/components/Topbar'
@@ -6,8 +6,10 @@ import { useIsDesktop } from '../../../shared/hooks/useIsDesktop'
 import { ProjetoModal } from '../components/ProjetoModal'
 import { atualizarProjeto, criarProjeto, getProjetos, removerProjeto } from '../lib/projetosApi'
 import {
+  COLUNAS_KANBAN,
   STATUS_PROJETO_LABEL,
   STATUS_PROJETO_ORDEM,
+  colunaKanban,
   compararAtividades,
   subtarefaVencida,
   valorNoMes,
@@ -42,6 +44,7 @@ export function ProjetosPage() {
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
   const [gruposColapsados, setGruposColapsados] = useState<Set<Projeto['status']>>(new Set())
   const [busca, setBusca] = useState('')
+  const [visaoAtividades, setVisaoAtividades] = useState<'lista' | 'kanban'>('lista')
 
   useEffect(() => {
     document.body.classList.toggle('wide', isDesktop)
@@ -117,6 +120,15 @@ export function ProjetosPage() {
     const itens = ativos.flatMap((p) => p.subtarefas.map((s) => ({ projeto: p, subtarefa: s })))
     return itens.sort((a, b) => compararAtividades(a.subtarefa, b.subtarefa))
   }, [ativos])
+
+  const kanban = useMemo(
+    () =>
+      COLUNAS_KANBAN.map((coluna) => ({
+        ...coluna,
+        itens: atividades.filter(({ subtarefa }) => colunaKanban(subtarefa) === coluna.id),
+      })),
+    [atividades],
+  )
 
   const tabela = useMemo(() => {
     const linhas = ativos.map((p) => ({ projeto: p, meses: valoresDoAno(p, ano) }))
@@ -272,9 +284,80 @@ export function ProjetosPage() {
               )}
 
               <div className="stack" style={{ gap: 6 }}>
-                <h3>Lista de atividades</h3>
+                <div className="row-between">
+                  <h3 style={{ margin: 0 }}>Lista de atividades</h3>
+                  {isDesktop && (
+                    <div className="row" style={{ gap: 4 }}>
+                      <button
+                        type="button"
+                        className={`btn ${visaoAtividades === 'lista' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ padding: '6px 10px' }}
+                        onClick={() => setVisaoAtividades('lista')}
+                        aria-label="Ver em lista"
+                      >
+                        <List size={16} strokeWidth={1.5} />
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn ${visaoAtividades === 'kanban' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ padding: '6px 10px' }}
+                        onClick={() => setVisaoAtividades('kanban')}
+                        aria-label="Ver em kanban"
+                      >
+                        <Kanban size={16} strokeWidth={1.5} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 {atividades.length === 0 ? (
                   <p className="text-dim text-sm">Nenhuma subtarefa lançada ainda.</p>
+                ) : visaoAtividades === 'kanban' && isDesktop ? (
+                  <div className="kanban-board">
+                    {kanban.map((coluna) => (
+                      <div key={coluna.id} className="kanban-coluna">
+                        <div className="row-between">
+                          <span className="text-sm" style={{ fontWeight: 600 }}>
+                            {coluna.label}
+                          </span>
+                          <span className="text-dim text-sm">{coluna.itens.length}</span>
+                        </div>
+                        {coluna.itens.length === 0 ? (
+                          <p className="text-dim text-sm">—</p>
+                        ) : (
+                          coluna.itens.map(({ projeto, subtarefa }) => {
+                            const vencida = subtarefaVencida(subtarefa)
+                            return (
+                              <label key={subtarefa.id} className="card kanban-cartao">
+                                <input
+                                  type="checkbox"
+                                  checked={subtarefa.concluida}
+                                  onChange={() => alternarSubtarefaInline(projeto, subtarefa.id)}
+                                  style={{ width: 18, height: 18, flexShrink: 0, marginTop: 2 }}
+                                />
+                                <div style={{ minWidth: 0 }}>
+                                  <p
+                                    className="text-sm"
+                                    style={{
+                                      textDecoration: subtarefa.concluida ? 'line-through' : undefined,
+                                      opacity: subtarefa.concluida ? 0.6 : 1,
+                                      color: vencida ? 'var(--danger)' : undefined,
+                                    }}
+                                  >
+                                    {subtarefa.nome}
+                                  </p>
+                                  <p className="text-dim text-sm" style={{ color: vencida ? 'var(--danger)' : undefined }}>
+                                    {projeto.nome}
+                                    {subtarefa.vencimento ? ` · ${formatarData(subtarefa.vencimento)}` : ''}
+                                  </p>
+                                </div>
+                              </label>
+                            )
+                          })
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <div className="card atividades-grid">
                     {atividades.map(({ projeto, subtarefa }) => {

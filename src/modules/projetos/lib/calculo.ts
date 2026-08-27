@@ -54,3 +54,33 @@ export function compararAtividades(a: Subtarefa, b: Subtarefa): number {
   const vb = b.vencimento ?? Infinity
   return va - vb
 }
+
+export type ColunaKanban = 'vencido' | 'hoje' | 'semana' | 'em_breve' | 'concluido'
+
+export const COLUNAS_KANBAN: { id: ColunaKanban; label: string }[] = [
+  { id: 'vencido', label: 'Vencidos' },
+  { id: 'hoje', label: 'Hoje' },
+  { id: 'semana', label: 'Esta semana' },
+  { id: 'em_breve', label: 'Em breve' },
+  { id: 'concluido', label: 'Concluídos' },
+]
+
+/** Sem data e ainda pendente cai em "Em breve" (sem urgência definida). */
+export function colunaKanban(s: Pick<Subtarefa, 'concluida' | 'vencimento'>): ColunaKanban {
+  if (s.concluida) return 'concluido'
+  if (!s.vencimento) return 'em_breve'
+
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+  const inicioHoje = hoje.getTime()
+  const fimHoje = inicioHoje + 24 * 60 * 60 * 1000 - 1
+  if (s.vencimento < inicioHoje) return 'vencido'
+  if (s.vencimento <= fimHoje) return 'hoje'
+
+  const fimDaSemana = new Date(hoje)
+  fimDaSemana.setDate(fimDaSemana.getDate() + (6 - fimDaSemana.getDay()))
+  fimDaSemana.setHours(23, 59, 59, 999)
+  if (s.vencimento <= fimDaSemana.getTime()) return 'semana'
+
+  return 'em_breve'
+}
