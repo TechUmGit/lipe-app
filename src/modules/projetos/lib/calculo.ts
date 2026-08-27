@@ -23,9 +23,16 @@ export function dentroDaVigencia(p: Pick<Projeto, 'dataInicio' | 'dataFim'>, mes
   return true
 }
 
-export function valorNoMes(p: Pick<Projeto, 'dataInicio' | 'dataFim' | 'valoresPorMes'>, mes: number, ano: number): number {
-  if (!dentroDaVigencia(p, mes, ano)) return 0
-  return p.valoresPorMes[mes - 1] ?? 0
+export function valorNoMes(
+  p: Pick<Projeto, 'dataInicio' | 'dataFim' | 'valoresPorMes' | 'valoresPontuais'>,
+  mes: number,
+  ano: number,
+): number {
+  const recorrente = dentroDaVigencia(p, mes, ano) ? (p.valoresPorMes[mes - 1] ?? 0) : 0
+  const pontual = (p.valoresPontuais ?? [])
+    .filter((v) => v.mes === mes && v.ano === ano)
+    .reduce((s, v) => s + v.valor, 0)
+  return recorrente + pontual
 }
 
 export function valoresDoAno(p: Projeto, ano: number): number[] {

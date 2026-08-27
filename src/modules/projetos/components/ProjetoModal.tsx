@@ -2,7 +2,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Modal } from '../../../shared/components/Modal'
 import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, compararAtividades, subtarefaVencida } from '../lib/calculo'
-import type { MesAnoRef, NovoProjeto, Projeto, Subtarefa } from '../lib/types'
+import type { MesAnoRef, NovoProjeto, Projeto, Subtarefa, ValorPontual } from '../lib/types'
 
 const MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -40,9 +40,45 @@ function projetoInicial(): NovoProjeto {
     dataInicio: hoje(),
     dataFim: hoje(),
     valoresPorMes: new Array(12).fill(0),
+    valoresPontuais: [],
     subtarefas: [],
     obs: '',
   }
+}
+
+function formatarMoeda(v: number) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+/** Input que formata como moeda enquanto digita — cada dígito entra pela direita, como em app de banco. */
+function MoedaInput({
+  valor,
+  onChange,
+  style,
+}: {
+  valor: number
+  onChange: (novoValor: number) => void
+  style?: React.CSSProperties
+}) {
+  const centavos = Math.round(valor * 100)
+  const texto = centavos === 0 ? '' : formatarMoeda(centavos / 100)
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digitos = e.target.value.replace(/\D/g, '')
+    const novosCentavos = digitos ? parseInt(digitos, 10) : 0
+    onChange(novosCentavos / 100)
+  }
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      placeholder="R$ 0,00"
+      value={texto}
+      onChange={handleChange}
+      style={style}
+    />
+  )
 }
 
 export function ProjetoModal({
@@ -63,23 +99,25 @@ export function ProjetoModal({
   const [dataInicio, setDataInicio] = useState(paraInputMonth(base.dataInicio))
   const [perpetuo, setPerpetuo] = useState(base.recorrente && base.dataFim === null)
   const [dataFim, setDataFim] = useState(paraInputMonth(base.dataFim ?? base.dataInicio))
-  const [valoresTexto, setValoresTexto] = useState<string[]>(
-    base.valoresPorMes.map((v) => (v ? String(v) : '')),
-  )
+  const [valoresPorMes, setValoresPorMes] = useState<number[]>(base.valoresPorMes)
   const [subtarefas, setSubtarefas] = useState<Subtarefa[]>(base.subtarefas)
   const [novaSubtarefa, setNovaSubtarefa] = useState('')
   const [novaSubtarefaVencimento, setNovaSubtarefaVencimento] = useState('')
+  const [valoresPontuais, setValoresPontuais] = useState<ValorPontual[]>(base.valoresPontuais ?? [])
+  const [novoPontualMes, setNovoPontualMes] = useState(paraInputMonth(hoje()))
+  const [novoPontualValor, setNovoPontualValor] = useState(0)
   const [obs, setObs] = useState(base.obs ?? '')
 
-  function atualizarValorMes(i: number, texto: string) {
-    setValoresTexto((prev) => prev.map((v, idx) => (idx === i ? texto : v)))
+  function atualizarValorMes(i: number, novoValor: number) {
+    setValoresPorMes((prev) => prev.map((v, idx) => (idx === i ? novoValor : v)))
   }
 
   function adicionarSubtarefa() {
     const nomeSub = novaSubtarefa.trim()
     if (!nomeSub) return
-    const vencimento = novaSubtarefaVencimento ? deInputDate(novaSubtarefaVencimento) : undefined
-    setSubtarefas((prev) => [...prev, { id: crypto.randomUUID(), nome: nomeSub, concluida: false, vencimento }])
+    const nova: Subtarefa = { id: crypto.randomUUID(), nome: nomeSub, concluida: false }
+    if (novaSubtarefaVencimento) nova.vencimento = deInputDate(novaSubtarefaVencimento)
+    setSubtarefas((prev) => [...prev, nova])
     setNovaSubtarefa('')
     setNovaSubtarefaVencimento('')
   }
@@ -88,14 +126,35 @@ export function ProjetoModal({
     setSubtarefas((prev) => prev.map((s) => (s.id === id ? { ...s, concluida: !s.concluida } : s)))
   }
 
-  function atualizarVencimentoSubtarefa(id: string, valor: string) {
+  function atualizarNomeSubtarefa(id: string, nomeNovo: string) {
+    setSubtarefas((prev) => prev.map((s) => (s.id === id ? { ...s, nome: nomeNovo } : s)))
+  }
+
+  function atualizarVencimentoSubtarefa(id: string, valorNovo: string) {
     setSubtarefas((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, vencimento: valor ? deInputDate(valor) : undefined } : s)),
+      prev.map((s) => {
+        if (s.id !== id) return s
+        const atualizado = { ...s }
+        if (valorNovo) atualizado.vencimento = deInputDate(valorNovo)
+        else delete atualizado.vencimento
+        return atualizado
+      }),
     )
   }
 
   function removerSubtarefa(id: string) {
     setSubtarefas((prev) => prev.filter((s) => s.id !== id))
+  }
+
+  function adicionarValorPontual() {
+    if (!novoPontualMes || novoPontualValor <= 0) return
+    const { mes, ano } = deInputMonth(novoPontualMes)
+    setValoresPontuais((prev) => [...prev, { id: crypto.randomUUID(), mes, ano, valor: novoPontualValor }])
+    setNovoPontualValor(0)
+  }
+
+  function removerValorPontual(id: string) {
+    setValoresPontuais((prev) => prev.filter((v) => v.id !== id))
   }
 
   function salvar() {
@@ -106,7 +165,8 @@ export function ProjetoModal({
       recorrente,
       dataInicio: deInputMonth(dataInicio),
       dataFim: recorrente && perpetuo ? null : deInputMonth(dataFim),
-      valoresPorMes: valoresTexto.map((v) => Math.max(0, Number(v) || 0)),
+      valoresPorMes,
+      valoresPontuais,
       subtarefas,
       obs: obs.trim(),
     }
@@ -185,13 +245,7 @@ export function ProjetoModal({
           {MESES.map((m, i) => (
             <label key={m} style={{ width: 'calc(33.33% - 6px)' }}>
               {m.slice(0, 3)}
-              <input
-                type="number"
-                min={0}
-                placeholder="0"
-                value={valoresTexto[i]}
-                onChange={(e) => atualizarValorMes(i, e.target.value)}
-              />
+              <MoedaInput valor={valoresPorMes[i]} onChange={(v) => atualizarValorMes(i, v)} />
             </label>
           ))}
         </div>
@@ -203,6 +257,45 @@ export function ProjetoModal({
       </div>
 
       <div className="stack" style={{ gap: 6 }}>
+        <span className="text-dim text-sm">Valor pontual (prêmio ou bônus que não se repete todo ano)</span>
+        {valoresPontuais.length > 0 && (
+          <div className="stack" style={{ gap: 6 }}>
+            {valoresPontuais.map((v) => (
+              <div key={v.id} className="row-between card" style={{ padding: '8px 12px' }}>
+                <span className="text-sm">
+                  {MESES[v.mes - 1]}/{v.ano}
+                </span>
+                <span className="text-sm" style={{ fontWeight: 600 }}>
+                  {formatarMoeda(v.valor)}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ padding: '4px 8px' }}
+                  onClick={() => removerValorPontual(v.id)}
+                  aria-label="Remover valor pontual"
+                >
+                  <Trash2 size={15} strokeWidth={1.5} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="row">
+          <input
+            type="month"
+            value={novoPontualMes}
+            onChange={(e) => setNovoPontualMes(e.target.value)}
+            style={{ flex: 1 }}
+          />
+          <MoedaInput valor={novoPontualValor} onChange={setNovoPontualValor} style={{ flex: 1 }} />
+          <button type="button" className="btn" onClick={adicionarValorPontual} aria-label="Adicionar valor pontual">
+            <Plus size={16} strokeWidth={1.5} />
+          </button>
+        </div>
+      </div>
+
+      <div className="stack" style={{ gap: 6 }}>
         <span className="text-dim text-sm">Subtarefas</span>
         {subtarefas.length > 0 && (
           <div className="stack" style={{ gap: 6 }}>
@@ -210,27 +303,23 @@ export function ProjetoModal({
               const vencida = subtarefaVencida(s)
               return (
                 <div key={s.id} className="row-between card" style={{ padding: '8px 12px' }}>
-                  <label
-                    className="row"
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, cursor: 'pointer' }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={s.concluida}
-                      onChange={() => alternarSubtarefa(s.id)}
-                      style={{ width: 18, height: 18, flexShrink: 0 }}
-                    />
-                    <span
-                      className="text-sm"
-                      style={{
-                        textDecoration: s.concluida ? 'line-through' : undefined,
-                        opacity: s.concluida ? 0.6 : 1,
-                        color: vencida ? 'var(--danger)' : undefined,
-                      }}
-                    >
-                      {s.nome}
-                    </span>
-                  </label>
+                  <input
+                    type="checkbox"
+                    checked={s.concluida}
+                    onChange={() => alternarSubtarefa(s.id)}
+                    style={{ width: 18, height: 18, flexShrink: 0 }}
+                  />
+                  <input
+                    type="text"
+                    value={s.nome}
+                    onChange={(e) => atualizarNomeSubtarefa(s.id, e.target.value)}
+                    style={{
+                      flex: 1,
+                      textDecoration: s.concluida ? 'line-through' : undefined,
+                      opacity: s.concluida ? 0.6 : 1,
+                      color: vencida ? 'var(--danger)' : undefined,
+                    }}
+                  />
                   <input
                     type="date"
                     value={s.vencimento ? paraInputDate(s.vencimento) : ''}

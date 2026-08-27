@@ -515,6 +515,15 @@ body.wide #root {
   border-radius: 4px;
 }
 
+.dre-table tbody tr:hover td {
+  background: var(--surface-2);
+}
+
+.dre-table-grupo:hover td,
+.dre-table-grupo:hover td:first-child {
+  background: var(--border);
+}
+
 @media (max-width: 899px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
@@ -525,4 +534,50 @@ body.wide #root {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 10px;
+}
+
+.atividades-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.atividade-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.atividade-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.atividade-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+@media (min-width: 600px) {
+  .atividades-grid {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    column-gap: 16px;
+    row-gap: 10px;
+    align-items: center;
+  }
+
+  .atividade-row,
+  .atividade-content,
+  .atividade-meta {
+    display: contents;
+  }
 }

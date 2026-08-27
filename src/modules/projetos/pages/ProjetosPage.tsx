@@ -276,50 +276,42 @@ export function ProjetosPage() {
                 {atividades.length === 0 ? (
                   <p className="text-dim text-sm">Nenhuma subtarefa lançada ainda.</p>
                 ) : (
-                  <div
-                    className="card"
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'auto 1fr auto auto',
-                      columnGap: 16,
-                      rowGap: 10,
-                      alignItems: 'center',
-                    }}
-                  >
+                  <div className="card atividades-grid">
                     {atividades.map(({ projeto, subtarefa }) => {
                       const vencida = subtarefaVencida(subtarefa)
                       return (
-                        <label key={subtarefa.id} style={{ display: 'contents', cursor: 'pointer' }}>
+                        <label key={subtarefa.id} className="atividade-row">
                           <input
                             type="checkbox"
                             checked={subtarefa.concluida}
                             onChange={() => alternarSubtarefaInline(projeto, subtarefa.id)}
-                            style={{ width: 18, height: 18, flexShrink: 0 }}
+                            style={{ width: 18, height: 18, flexShrink: 0, marginTop: 2 }}
                           />
-                          <span
-                            className="text-sm"
-                            style={{
-                              minWidth: 0,
-                              textDecoration: subtarefa.concluida ? 'line-through' : undefined,
-                              opacity: subtarefa.concluida ? 0.6 : 1,
-                              color: vencida ? 'var(--danger)' : undefined,
-                            }}
-                          >
-                            {subtarefa.nome}
-                          </span>
-                          <span
-                            className="text-sm"
-                            style={{
-                              whiteSpace: 'nowrap',
-                              textAlign: 'right',
-                              color: vencida ? 'var(--danger)' : 'var(--text-dim)',
-                            }}
-                          >
-                            {subtarefa.vencimento ? formatarData(subtarefa.vencimento) : '—'}
-                          </span>
-                          <span className="text-dim text-sm" style={{ whiteSpace: 'nowrap' }}>
-                            {projeto.nome}
-                          </span>
+                          <div className="atividade-content">
+                            <span
+                              className="text-sm"
+                              style={{
+                                minWidth: 0,
+                                textDecoration: subtarefa.concluida ? 'line-through' : undefined,
+                                opacity: subtarefa.concluida ? 0.6 : 1,
+                                color: vencida ? 'var(--danger)' : undefined,
+                              }}
+                            >
+                              {subtarefa.nome}
+                            </span>
+                            <div className="atividade-meta">
+                              <span
+                                style={{
+                                  whiteSpace: 'nowrap',
+                                  textAlign: 'right',
+                                  color: vencida ? 'var(--danger)' : 'var(--text-dim)',
+                                }}
+                              >
+                                {subtarefa.vencimento ? formatarData(subtarefa.vencimento) : '—'}
+                              </span>
+                              <span style={{ whiteSpace: 'nowrap' }}>{projeto.nome}</span>
+                            </div>
+                          </div>
                         </label>
                       )
                     })}

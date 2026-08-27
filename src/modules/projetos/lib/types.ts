@@ -12,6 +12,13 @@ export interface Subtarefa {
   vencimento?: number
 }
 
+export interface ValorPontual {
+  id: string
+  mes: number
+  ano: number
+  valor: number
+}
+
 export interface Projeto {
   id: string
   nome: string
@@ -22,6 +29,8 @@ export interface Projeto {
   dataFim: MesAnoRef | null
   /** valor esperado por mês, índice 0 = Janeiro ... 11 = Dezembro */
   valoresPorMes: number[]
+  /** valores extras pontuais (prêmios, bônus) que não repetem todo ano */
+  valoresPontuais?: ValorPontual[]
   subtarefas: Subtarefa[]
   obs?: string
   criadoEm: number
