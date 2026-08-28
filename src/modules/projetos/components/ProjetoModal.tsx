@@ -103,6 +103,7 @@ export function ProjetoModal({
   const [subtarefas, setSubtarefas] = useState<Subtarefa[]>(base.subtarefas)
   const [novaSubtarefa, setNovaSubtarefa] = useState('')
   const [novaSubtarefaVencimento, setNovaSubtarefaVencimento] = useState('')
+  const [novaSubtarefaObs, setNovaSubtarefaObs] = useState('')
   const [valoresPontuais, setValoresPontuais] = useState<ValorPontual[]>(base.valoresPontuais ?? [])
   const [novoPontualMes, setNovoPontualMes] = useState(paraInputMonth(hoje()))
   const [novoPontualValor, setNovoPontualValor] = useState(0)
@@ -117,9 +118,11 @@ export function ProjetoModal({
     if (!nomeSub) return
     const nova: Subtarefa = { id: crypto.randomUUID(), nome: nomeSub, concluida: false }
     if (novaSubtarefaVencimento) nova.vencimento = deInputDate(novaSubtarefaVencimento)
+    if (novaSubtarefaObs.trim()) nova.obs = novaSubtarefaObs.trim()
     setSubtarefas((prev) => [...prev, nova])
     setNovaSubtarefa('')
     setNovaSubtarefaVencimento('')
+    setNovaSubtarefaObs('')
   }
 
   function alternarSubtarefa(id: string) {
@@ -137,6 +140,18 @@ export function ProjetoModal({
         const atualizado = { ...s }
         if (valorNovo) atualizado.vencimento = deInputDate(valorNovo)
         else delete atualizado.vencimento
+        return atualizado
+      }),
+    )
+  }
+
+  function atualizarObsSubtarefa(id: string, valorNovo: string) {
+    setSubtarefas((prev) =>
+      prev.map((s) => {
+        if (s.id !== id) return s
+        const atualizado = { ...s }
+        if (valorNovo) atualizado.obs = valorNovo
+        else delete atualizado.obs
         return atualizado
       }),
     )
@@ -302,66 +317,84 @@ export function ProjetoModal({
             {[...subtarefas].sort(compararAtividades).map((s) => {
               const vencida = subtarefaVencida(s)
               return (
-                <div key={s.id} className="row-between card" style={{ padding: '8px 12px' }}>
-                  <input
-                    type="checkbox"
-                    checked={s.concluida}
-                    onChange={() => alternarSubtarefa(s.id)}
-                    style={{ width: 18, height: 18, flexShrink: 0 }}
-                  />
+                <div key={s.id} className="card stack" style={{ padding: '8px 12px', gap: 6 }}>
+                  <div className="row">
+                    <input
+                      type="checkbox"
+                      checked={s.concluida}
+                      onChange={() => alternarSubtarefa(s.id)}
+                      style={{ width: 18, height: 18, flexShrink: 0 }}
+                    />
+                    <input
+                      type="text"
+                      value={s.nome}
+                      onChange={(e) => atualizarNomeSubtarefa(s.id, e.target.value)}
+                      style={{
+                        flex: 1,
+                        textDecoration: s.concluida ? 'line-through' : undefined,
+                        opacity: s.concluida ? 0.6 : 1,
+                        color: vencida ? 'var(--danger)' : undefined,
+                      }}
+                    />
+                    <input
+                      type="date"
+                      value={s.vencimento ? paraInputDate(s.vencimento) : ''}
+                      onChange={(e) => atualizarVencimentoSubtarefa(s.id, e.target.value)}
+                      style={{ width: 150, color: vencida ? 'var(--danger)' : undefined }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      style={{ padding: '4px 8px' }}
+                      onClick={() => removerSubtarefa(s.id)}
+                      aria-label="Remover subtarefa"
+                    >
+                      <Trash2 size={15} strokeWidth={1.5} />
+                    </button>
+                  </div>
                   <input
                     type="text"
-                    value={s.nome}
-                    onChange={(e) => atualizarNomeSubtarefa(s.id, e.target.value)}
-                    style={{
-                      flex: 1,
-                      textDecoration: s.concluida ? 'line-through' : undefined,
-                      opacity: s.concluida ? 0.6 : 1,
-                      color: vencida ? 'var(--danger)' : undefined,
-                    }}
+                    value={s.obs ?? ''}
+                    onChange={(e) => atualizarObsSubtarefa(s.id, e.target.value)}
+                    placeholder="Observação (opcional)"
+                    style={{ fontSize: 13 }}
                   />
-                  <input
-                    type="date"
-                    value={s.vencimento ? paraInputDate(s.vencimento) : ''}
-                    onChange={(e) => atualizarVencimentoSubtarefa(s.id, e.target.value)}
-                    style={{ width: 150, color: vencida ? 'var(--danger)' : undefined }}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    style={{ padding: '4px 8px' }}
-                    onClick={() => removerSubtarefa(s.id)}
-                    aria-label="Remover subtarefa"
-                  >
-                    <Trash2 size={15} strokeWidth={1.5} />
-                  </button>
                 </div>
               )
             })}
           </div>
         )}
-        <div className="row">
+        <div className="stack" style={{ gap: 6 }}>
+          <div className="row">
+            <input
+              placeholder="Nova subtarefa..."
+              value={novaSubtarefa}
+              onChange={(e) => setNovaSubtarefa(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  adicionarSubtarefa()
+                }
+              }}
+            />
+            <input
+              type="date"
+              value={novaSubtarefaVencimento}
+              onChange={(e) => setNovaSubtarefaVencimento(e.target.value)}
+              style={{ width: 150 }}
+              aria-label="Vencimento da nova subtarefa"
+            />
+            <button type="button" className="btn" onClick={adicionarSubtarefa} aria-label="Adicionar subtarefa">
+              <Plus size={16} strokeWidth={1.5} />
+            </button>
+          </div>
           <input
-            placeholder="Nova subtarefa..."
-            value={novaSubtarefa}
-            onChange={(e) => setNovaSubtarefa(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                adicionarSubtarefa()
-              }
-            }}
+            type="text"
+            value={novaSubtarefaObs}
+            onChange={(e) => setNovaSubtarefaObs(e.target.value)}
+            placeholder="Observação (opcional)"
+            style={{ fontSize: 13 }}
           />
-          <input
-            type="date"
-            value={novaSubtarefaVencimento}
-            onChange={(e) => setNovaSubtarefaVencimento(e.target.value)}
-            style={{ width: 150 }}
-            aria-label="Vencimento da nova subtarefa"
-          />
-          <button type="button" className="btn" onClick={adicionarSubtarefa} aria-label="Adicionar subtarefa">
-            <Plus size={16} strokeWidth={1.5} />
-          </button>
         </div>
       </div>
 

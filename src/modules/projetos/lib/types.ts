@@ -10,6 +10,7 @@ export interface Subtarefa {
   nome: string
   concluida: boolean
   vencimento?: number
+  obs?: string
 }
 
 export interface ValorPontual {
