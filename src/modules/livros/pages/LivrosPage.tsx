@@ -1,6 +1,9 @@
+import { Check } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useAuth } from '../../../core/AuthContext'
 import { Topbar } from '../../../shared/components/Topbar'
 import { useIsDesktop } from '../../../shared/hooks/useIsDesktop'
+import { getLidos, salvarLidos } from '../lib/livrosApi'
 import { LIVROS_SEED } from '../lib/livrosSeed'
 import type { Livro } from '../lib/types'
 
@@ -40,31 +43,100 @@ function Capa({ livro }: { livro: Livro }) {
   )
 }
 
+function CartaoLivro({
+  livro,
+  lido,
+  onAlternar,
+}: {
+  livro: Livro
+  lido: boolean
+  onAlternar: () => void
+}) {
+  return (
+    <div className="stack" style={{ gap: 4 }}>
+      <div style={{ position: 'relative', opacity: lido ? 0.55 : 1 }}>
+        <Capa livro={livro} />
+        <button
+          type="button"
+          className="livro-lido-btn"
+          data-ativo={lido}
+          onClick={onAlternar}
+          aria-label={lido ? 'Marcar como não lido' : 'Marcar como lido'}
+          title={lido ? 'Lido' : 'Marcar como lido'}
+        >
+          <Check size={14} strokeWidth={3} />
+        </button>
+      </div>
+      <p
+        className="text-sm"
+        style={{ fontWeight: 600, lineHeight: 1.25, textDecoration: lido ? 'line-through' : undefined }}
+      >
+        {livro.titulo}
+      </p>
+      {livro.autor && <p className="text-dim text-sm">{livro.autor}</p>}
+    </div>
+  )
+}
+
 export function LivrosPage() {
+  const { user } = useAuth()
   const isDesktop = useIsDesktop()
+  const [lidos, setLidos] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     document.body.classList.toggle('wide', isDesktop)
     return () => document.body.classList.remove('wide')
   }, [isDesktop])
 
+  useEffect(() => {
+    if (!user) return
+    getLidos(user.uid).then((ids) => setLidos(new Set(ids)))
+  }, [user])
+
+  async function alternarLido(id: string) {
+    if (!user) return
+    const novo = new Set(lidos)
+    if (novo.has(id)) novo.delete(id)
+    else novo.add(id)
+    setLidos(novo)
+    await salvarLidos(user.uid, Array.from(novo))
+  }
+
+  const queroLer = LIVROS_SEED.filter((l) => !lidos.has(l.id))
+  const jaLidos = LIVROS_SEED.filter((l) => lidos.has(l.id))
+
   return (
     <>
       <Topbar title="Livros" backTo="/" />
       <div className="page">
         <div className="stack">
-          <p className="text-dim text-sm">Quero ler ({LIVROS_SEED.length})</p>
+          <p className="text-dim text-sm">Quero ler ({queroLer.length})</p>
           <div className="livros-grid">
-            {LIVROS_SEED.map((livro) => (
-              <div key={livro.id} className="stack" style={{ gap: 4 }}>
-                <Capa livro={livro} />
-                <p className="text-sm" style={{ fontWeight: 600, lineHeight: 1.25 }}>
-                  {livro.titulo}
-                </p>
-                {livro.autor && <p className="text-dim text-sm">{livro.autor}</p>}
-              </div>
+            {queroLer.map((livro) => (
+              <CartaoLivro
+                key={livro.id}
+                livro={livro}
+                lido={false}
+                onAlternar={() => alternarLido(livro.id)}
+              />
             ))}
           </div>
+
+          {jaLidos.length > 0 && (
+            <>
+              <p className="text-dim text-sm">Lidos ({jaLidos.length})</p>
+              <div className="livros-grid">
+                {jaLidos.map((livro) => (
+                  <CartaoLivro
+                    key={livro.id}
+                    livro={livro}
+                    lido={true}
+                    onAlternar={() => alternarLido(livro.id)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </>
