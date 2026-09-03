@@ -12,6 +12,7 @@ import { ResumoPage } from './modules/financas/pages/ResumoPage'
 import { ExtratoListPage } from './modules/financas/pages/ExtratoListPage'
 import { DREPage } from './modules/financas/pages/DREPage'
 import { ProjetosPage } from './modules/projetos/pages/ProjetosPage'
+import { LivrosPage } from './modules/livros/pages/LivrosPage'
 import { ImportarExtratoPage } from './modules/financas/pages/ImportarExtratoPage'
 import { CategoriasPage } from './modules/financas/pages/CategoriasPage'
 import { ConexoesBancariasPage } from './modules/financas/pages/ConexoesBancariasPage'
@@ -71,6 +72,15 @@ function App() {
         element={
           <ProtectedRoute>
             <ProjetosPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/livros"
+        element={
+          <ProtectedRoute>
+            <LivrosPage />
           </ProtectedRoute>
         }
       />

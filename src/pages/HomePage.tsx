@@ -1,4 +1,4 @@
-import { Briefcase, Dumbbell, Headphones, Wallet, type LucideIcon } from 'lucide-react'
+import { BookOpen, Briefcase, Dumbbell, Wallet, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Topbar } from '../shared/components/Topbar'
 
@@ -30,11 +30,10 @@ const apps: AppEntry[] = [
     description: 'Negociações, contratos fechados e receita esperada.',
   },
   {
-    to: '/audiobooks',
-    icon: Headphones,
-    title: 'Audiobooks',
-    description: 'Em breve.',
-    disabled: true,
+    to: '/livros',
+    icon: BookOpen,
+    title: 'Livros',
+    description: 'Biblioteca do que eu quero ler.',
   },
 ]
 
