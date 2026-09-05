@@ -1,11 +1,20 @@
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
+import { ProjetoModal } from '../components/ProjetoModal'
 import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, valorNoMes, valoresDoAno } from '../lib/calculo'
-import { getProjetos } from '../lib/projetosApi'
-import type { Projeto } from '../lib/types'
+import { atualizarProjeto, getProjetos, removerProjeto } from '../lib/projetosApi'
+import type { NovoProjeto, Projeto } from '../lib/types'
 
 const MESES_CURTO = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+
+type FiltroReceita = 'todos' | 'com_receita' | 'sem_receita'
+
+const FILTROS_RECEITA: { id: FiltroReceita; label: string }[] = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'com_receita', label: 'Geram receita' },
+  { id: 'sem_receita', label: 'Não geram' },
+]
 
 function formatarMoeda(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -17,14 +26,31 @@ export function ProjecoesPage() {
   const [projetos, setProjetos] = useState<Projeto[]>([])
   const [ano, setAno] = useState(new Date().getFullYear())
   const [gruposColapsados, setGruposColapsados] = useState<Set<Projeto['status']>>(new Set())
+  const [filtroReceita, setFiltroReceita] = useState<FiltroReceita>('todos')
+  const [editando, setEditando] = useState<Projeto | null>(null)
 
   useEffect(() => {
-    if (!user) return
-    getProjetos(user.uid).then((p) => {
-      setProjetos(p)
-      setLoading(false)
-    })
+    carregar()
   }, [user])
+
+  async function carregar() {
+    if (!user) return
+    const p = await getProjetos(user.uid)
+    setProjetos(p)
+    setLoading(false)
+  }
+
+  async function salvar(dados: NovoProjeto) {
+    if (!user || !editando) return
+    await atualizarProjeto(user.uid, editando.id, dados)
+    await carregar()
+  }
+
+  async function excluir(id: string) {
+    if (!user) return
+    setProjetos((prev) => prev.filter((p) => p.id !== id))
+    await removerProjeto(user.uid, id)
+  }
 
   function alternarGrupoColapsado(status: Projeto['status']) {
     setGruposColapsados((prev) => {
@@ -38,7 +64,12 @@ export function ProjecoesPage() {
   const ativos = useMemo(() => projetos.filter((p) => p.status !== 'cancelado'), [projetos])
 
   const tabela = useMemo(() => {
-    const linhas = ativos.map((p) => ({ projeto: p, meses: valoresDoAno(p, ano) }))
+    const todasLinhas = ativos.map((p) => ({ projeto: p, meses: valoresDoAno(p, ano) }))
+    const linhas = todasLinhas.filter((l) => {
+      if (filtroReceita === 'todos') return true
+      const geraReceita = l.meses.some((v) => v !== 0)
+      return filtroReceita === 'com_receita' ? geraReceita : !geraReceita
+    })
     const grupos = STATUS_PROJETO_ORDEM.filter((s) => s !== 'cancelado').map((status) => {
       const linhasDoGrupo = linhas.filter((l) => l.projeto.status === status)
       const mesesSubtotal = new Array(12).fill(0)
@@ -47,7 +78,7 @@ export function ProjecoesPage() {
     })
     const totalPorMes = new Array(12).fill(0).map((_, i) => grupos.reduce((s, g) => s + g.mesesSubtotal[i], 0))
     return { grupos, totalPorMes }
-  }, [ativos, ano])
+  }, [ativos, ano, filtroReceita])
 
   const resumo = useMemo(() => {
     const hoje = new Date()
@@ -78,6 +109,19 @@ export function ProjecoesPage() {
             <ChevronRight size={18} strokeWidth={1.5} />
           </button>
         </div>
+      </div>
+
+      <div className="chip-grid">
+        {FILTROS_RECEITA.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            className={`chip ${filtroReceita === f.id ? 'active' : ''}`}
+            onClick={() => setFiltroReceita(f.id)}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       <div className="dre-table-wrap">
@@ -122,7 +166,9 @@ export function ProjecoesPage() {
                   {!colapsado &&
                     g.linhas.map((l) => (
                       <tr key={l.projeto.id}>
-                        <td>{l.projeto.nome}</td>
+                        <td style={{ cursor: 'pointer' }} onClick={() => setEditando(l.projeto)}>
+                          {l.projeto.nome}
+                        </td>
                         {l.meses.map((v, i) => (
                           <td key={i}>{v !== 0 ? formatarMoeda(v) : '—'}</td>
                         ))}
@@ -158,6 +204,15 @@ export function ProjecoesPage() {
           </div>
         </div>
       </div>
+
+      {editando && (
+        <ProjetoModal
+          projeto={editando}
+          onClose={() => setEditando(null)}
+          onSave={salvar}
+          onDelete={() => excluir(editando.id)}
+        />
+      )}
     </div>
   )
 }

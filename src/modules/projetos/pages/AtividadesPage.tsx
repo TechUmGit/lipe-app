@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { useIsDesktop } from '../../../shared/hooks/useIsDesktop'
 import { EditarAtividadeModal, type DadosEdicaoAtividade } from '../components/EditarAtividadeModal'
+import { EditarSubatividadeModal, type DadosEdicaoSubatividade } from '../components/EditarSubatividadeModal'
 import {
   COLUNAS_KANBAN,
   type ColunaKanban,
@@ -30,53 +31,98 @@ function deInputDate(valor: string) {
   return new Date(ano, mes - 1, dia).getTime()
 }
 
+function paraInputDate(ms: number) {
+  return new Date(ms).toISOString().slice(0, 10)
+}
+
 function PainelSubatividades({
   subatividades,
+  vencimentoMaximo,
   onToggle,
   onAdicionar,
+  onEditar,
   onRemover,
 }: {
   subatividades: Subatividade[]
+  vencimentoMaximo?: number
   onToggle: (id: string) => void
-  onAdicionar: (nome: string) => void
+  onAdicionar: (nome: string, vencimento?: number) => void
+  onEditar: (subatividade: Subatividade) => void
   onRemover: (id: string) => void
 }) {
   const [texto, setTexto] = useState('')
+  const [data, setData] = useState('')
+  const [erro, setErro] = useState('')
+
+  const maxInput = vencimentoMaximo !== undefined ? paraInputDate(vencimentoMaximo - 24 * 60 * 60 * 1000) : undefined
 
   function adicionar() {
     const nome = texto.trim()
     if (!nome) return
-    onAdicionar(nome)
+    let vencimento: number | undefined
+    if (data) {
+      const ms = deInputDate(data)
+      if (vencimentoMaximo !== undefined && ms >= vencimentoMaximo) {
+        setErro('A validade precisa ser antes do vencimento da atividade.')
+        return
+      }
+      vencimento = ms
+    }
+    onAdicionar(nome, vencimento)
     setTexto('')
+    setData('')
+    setErro('')
   }
 
   return (
     <div className="stack" style={{ gap: 6 }}>
-      {subatividades.map((sub) => (
-        <div key={sub.id} className="row" style={{ gap: 8, alignItems: 'center' }}>
-          <input
-            type="checkbox"
-            checked={sub.concluida}
-            onChange={() => onToggle(sub.id)}
-            style={{ width: 16, height: 16, flexShrink: 0 }}
-          />
-          <span
-            className="text-sm"
-            style={{ flex: 1, textDecoration: sub.concluida ? 'line-through' : undefined, opacity: sub.concluida ? 0.6 : 1 }}
-          >
-            {sub.nome}
-          </span>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            style={{ padding: '2px 6px' }}
-            onClick={() => onRemover(sub.id)}
-            aria-label="Remover subatividade"
-          >
-            <Trash2 size={13} strokeWidth={1.5} />
-          </button>
-        </div>
-      ))}
+      {subatividades.map((sub) => {
+        const vencida = !sub.concluida && !!sub.vencimento && sub.vencimento < Date.now()
+        return (
+          <div key={sub.id} className="row" style={{ gap: 8, alignItems: 'center' }}>
+            <input
+              type="checkbox"
+              checked={sub.concluida}
+              onChange={() => onToggle(sub.id)}
+              style={{ width: 16, height: 16, flexShrink: 0 }}
+            />
+            <span
+              className="text-sm"
+              style={{
+                flex: 1,
+                textDecoration: sub.concluida ? 'line-through' : undefined,
+                opacity: sub.concluida ? 0.6 : 1,
+                color: vencida ? 'var(--danger)' : undefined,
+              }}
+            >
+              {sub.nome}
+            </span>
+            {sub.vencimento && (
+              <span className="text-dim text-sm" style={{ whiteSpace: 'nowrap', color: vencida ? 'var(--danger)' : undefined }}>
+                {formatarData(sub.vencimento)}
+              </span>
+            )}
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ padding: '2px 6px' }}
+              onClick={() => onEditar(sub)}
+              aria-label="Editar subatividade"
+            >
+              <Pencil size={13} strokeWidth={1.5} />
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ padding: '2px 6px' }}
+              onClick={() => onRemover(sub.id)}
+              aria-label="Remover subatividade"
+            >
+              <Trash2 size={13} strokeWidth={1.5} />
+            </button>
+          </div>
+        )
+      })}
       <div className="row">
         <input
           placeholder="Nova subatividade..."
@@ -88,12 +134,24 @@ function PainelSubatividades({
               adicionar()
             }
           }}
-          style={{ fontSize: 13 }}
+          style={{ fontSize: 13, flex: 2 }}
+        />
+        <input
+          type="date"
+          value={data}
+          onChange={(e) => {
+            setData(e.target.value)
+            setErro('')
+          }}
+          max={maxInput}
+          style={{ flex: 1, minWidth: 130 }}
+          aria-label="Validade da nova subatividade"
         />
         <button type="button" className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={adicionar} aria-label="Adicionar subatividade">
           <Plus size={14} strokeWidth={1.5} />
         </button>
       </div>
+      {erro && <p className="error-text">{erro}</p>}
     </div>
   )
 }
@@ -110,6 +168,7 @@ export function AtividadesPage() {
   const [novoProjetoId, setNovoProjetoId] = useState('')
   const [novoVencimento, setNovoVencimento] = useState('')
   const [editando, setEditando] = useState<{ projeto: Projeto; subtarefa: Subtarefa } | null>(null)
+  const [editandoSub, setEditandoSub] = useState<{ projeto: Projeto; subtarefa: Subtarefa; subatividade: Subatividade } | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -178,11 +237,32 @@ export function AtividadesPage() {
     salvarSubtarefas(projeto, novas)
   }
 
-  function adicionarSubatividade(projeto: Projeto, subtarefaId: string, nome: string) {
+  function adicionarSubatividade(projeto: Projeto, subtarefaId: string, nome: string, vencimento?: number) {
     const novas = projeto.subtarefas.map((s) => {
       if (s.id !== subtarefaId) return s
       const nova: Subatividade = { id: crypto.randomUUID(), nome, concluida: false }
+      if (vencimento) nova.vencimento = vencimento
       return { ...s, subatividades: [...(s.subatividades ?? []), nova] }
+    })
+    salvarSubtarefas(projeto, novas)
+  }
+
+  function atualizarSubatividade(
+    projeto: Projeto,
+    subtarefaId: string,
+    subId: string,
+    dados: DadosEdicaoSubatividade,
+  ) {
+    const novas = projeto.subtarefas.map((s) => {
+      if (s.id !== subtarefaId) return s
+      const subs = (s.subatividades ?? []).map((sub) => {
+        if (sub.id !== subId) return sub
+        const atualizado: Subatividade = { ...sub, nome: dados.nome }
+        if (dados.vencimento) atualizado.vencimento = dados.vencimento
+        else delete atualizado.vencimento
+        return atualizado
+      })
+      return { ...s, subatividades: subs }
     })
     salvarSubtarefas(projeto, novas)
   }
@@ -286,8 +366,10 @@ export function AtividadesPage() {
           <div style={{ marginTop: 8, paddingLeft: 26, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
             <PainelSubatividades
               subatividades={subatividades}
+              vencimentoMaximo={subtarefa.vencimento}
               onToggle={(id) => alternarSubatividade(projeto, subtarefa.id, id)}
-              onAdicionar={(nome) => adicionarSubatividade(projeto, subtarefa.id, nome)}
+              onAdicionar={(nome, vencimento) => adicionarSubatividade(projeto, subtarefa.id, nome, vencimento)}
+              onEditar={(subatividade) => setEditandoSub({ projeto, subtarefa, subatividade })}
               onRemover={(id) => removerSubatividade(projeto, subtarefa.id, id)}
             />
           </div>
@@ -445,6 +527,15 @@ export function AtividadesPage() {
           subtarefa={editando.subtarefa}
           onClose={() => setEditando(null)}
           onSave={salvarEdicaoAtividade}
+        />
+      )}
+
+      {editandoSub && (
+        <EditarSubatividadeModal
+          subatividade={editandoSub.subatividade}
+          vencimentoMaximo={editandoSub.subtarefa.vencimento}
+          onClose={() => setEditandoSub(null)}
+          onSave={(dados) => atualizarSubatividade(editandoSub.projeto, editandoSub.subtarefa.id, editandoSub.subatividade.id, dados)}
         />
       )}
     </div>
