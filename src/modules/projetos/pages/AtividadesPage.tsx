@@ -1,7 +1,8 @@
-import { ChevronRight, Kanban, List, Plus, Trash2 } from 'lucide-react'
+import { ChevronRight, Kanban, List, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { useIsDesktop } from '../../../shared/hooks/useIsDesktop'
+import { EditarAtividadeModal, type DadosEdicaoAtividade } from '../components/EditarAtividadeModal'
 import {
   COLUNAS_KANBAN,
   type ColunaKanban,
@@ -108,6 +109,7 @@ export function AtividadesPage() {
   const [novoNome, setNovoNome] = useState('')
   const [novoProjetoId, setNovoProjetoId] = useState('')
   const [novoVencimento, setNovoVencimento] = useState('')
+  const [editando, setEditando] = useState<{ projeto: Projeto; subtarefa: Subtarefa } | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -193,6 +195,20 @@ export function AtividadesPage() {
     salvarSubtarefas(projeto, novas)
   }
 
+  function salvarEdicaoAtividade(dados: DadosEdicaoAtividade) {
+    if (!editando) return
+    const novas = editando.projeto.subtarefas.map((s) => {
+      if (s.id !== editando.subtarefa.id) return s
+      const atualizado: Subtarefa = { ...s, nome: dados.nome }
+      if (dados.vencimento) atualizado.vencimento = dados.vencimento
+      else delete atualizado.vencimento
+      if (dados.obs) atualizado.obs = dados.obs
+      else delete atualizado.obs
+      return atualizado
+    })
+    salvarSubtarefas(editando.projeto, novas)
+  }
+
   async function adicionarAtividade() {
     const nome = novoNome.trim()
     const projeto = ativos.find((p) => p.id === novoProjetoId)
@@ -247,6 +263,15 @@ export function AtividadesPage() {
               </span>
             </div>
           </div>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            style={{ padding: '4px 8px' }}
+            onClick={() => setEditando({ projeto, subtarefa })}
+            aria-label="Editar atividade"
+          >
+            <Pencil size={15} strokeWidth={1.5} />
+          </button>
           <button
             type="button"
             className="btn btn-ghost"
@@ -413,6 +438,14 @@ export function AtividadesPage() {
             )
           })}
         </div>
+      )}
+
+      {editando && (
+        <EditarAtividadeModal
+          subtarefa={editando.subtarefa}
+          onClose={() => setEditando(null)}
+          onSave={salvarEdicaoAtividade}
+        />
       )}
     </div>
   )

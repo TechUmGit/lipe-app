@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { LayoutGrid, List, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { ProjetoModal } from '../components/ProjetoModal'
@@ -19,6 +19,7 @@ export function ProjetosListaPage() {
   const [projetos, setProjetos] = useState<Projeto[]>([])
   const [editando, setEditando] = useState<Projeto | 'novo' | null>(null)
   const [busca, setBusca] = useState('')
+  const [visao, setVisao] = useState<'cards' | 'lista'>('cards')
 
   useEffect(() => {
     carregar()
@@ -57,9 +58,29 @@ export function ProjetosListaPage() {
     <div className="stack">
       <div className="row-between">
         <h2 style={{ margin: 0 }}>Meus projetos</h2>
-        <button type="button" className="btn btn-primary" onClick={() => setEditando('novo')}>
-          <Plus size={16} strokeWidth={1.5} /> Novo
-        </button>
+        <div className="row" style={{ gap: 4 }}>
+          <button
+            type="button"
+            className={`btn ${visao === 'cards' ? 'btn-primary' : 'btn-ghost'}`}
+            style={{ padding: '6px 10px' }}
+            onClick={() => setVisao('cards')}
+            aria-label="Ver em cards"
+          >
+            <LayoutGrid size={16} strokeWidth={1.5} />
+          </button>
+          <button
+            type="button"
+            className={`btn ${visao === 'lista' ? 'btn-primary' : 'btn-ghost'}`}
+            style={{ padding: '6px 10px' }}
+            onClick={() => setVisao('lista')}
+            aria-label="Ver em lista"
+          >
+            <List size={16} strokeWidth={1.5} />
+          </button>
+          <button type="button" className="btn btn-primary" onClick={() => setEditando('novo')}>
+            <Plus size={16} strokeWidth={1.5} /> Novo
+          </button>
+        </div>
       </div>
 
       <input placeholder="Buscar projeto..." value={busca} onChange={(e) => setBusca(e.target.value)} />
@@ -74,19 +95,40 @@ export function ProjetosListaPage() {
             return (
               <section key={status} className="stack" style={{ gap: 6 }}>
                 <h3>{STATUS_PROJETO_LABEL[status]}</h3>
-                <div className="projetos-grid">
-                  {doGrupo.map((p) => (
-                    <div
-                      key={p.id}
-                      className="card"
-                      style={{ padding: '10px 14px', cursor: 'pointer', opacity: status === 'cancelado' ? 0.6 : 1 }}
-                      onClick={() => setEditando(p)}
-                    >
-                      <p style={{ fontWeight: 600 }}>{p.nome}</p>
-                      <p className="text-dim text-sm">{p.recorrente ? 'Recorrente' : 'Pagamento único'}</p>
-                    </div>
-                  ))}
-                </div>
+                {visao === 'cards' ? (
+                  <div className="projetos-grid">
+                    {doGrupo.map((p) => (
+                      <div
+                        key={p.id}
+                        className="card"
+                        style={{ padding: '10px 14px', cursor: 'pointer', opacity: status === 'cancelado' ? 0.6 : 1 }}
+                        onClick={() => setEditando(p)}
+                      >
+                        <p style={{ fontWeight: 600 }}>{p.nome}</p>
+                        <p className="text-dim text-sm">{p.recorrente ? 'Recorrente' : 'Pagamento único'}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="card" style={{ padding: 0 }}>
+                    {doGrupo.map((p, i) => (
+                      <div
+                        key={p.id}
+                        className="row-between"
+                        style={{
+                          padding: '10px 14px',
+                          cursor: 'pointer',
+                          opacity: status === 'cancelado' ? 0.6 : 1,
+                          borderBottom: i < doGrupo.length - 1 ? '1px solid var(--border)' : undefined,
+                        }}
+                        onClick={() => setEditando(p)}
+                      >
+                        <span style={{ fontWeight: 600 }}>{p.nome}</span>
+                        <span className="text-dim text-sm">{p.recorrente ? 'Recorrente' : 'Pagamento único'}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </section>
             )
           })}

@@ -1,8 +1,8 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Modal } from '../../../shared/components/Modal'
-import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, compararAtividades, subtarefaVencida } from '../lib/calculo'
-import type { MesAnoRef, NovoProjeto, Projeto, Subtarefa, ValorPontual } from '../lib/types'
+import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM } from '../lib/calculo'
+import type { MesAnoRef, NovoProjeto, Projeto, ValorPontual } from '../lib/types'
 
 const MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -16,15 +16,6 @@ function paraInputMonth(m: MesAnoRef) {
 function deInputMonth(valor: string): MesAnoRef {
   const [ano, mes] = valor.split('-').map(Number)
   return { mes, ano }
-}
-
-function paraInputDate(ms: number) {
-  return new Date(ms).toISOString().slice(0, 10)
-}
-
-function deInputDate(valor: string) {
-  const [ano, mes, dia] = valor.split('-').map(Number)
-  return new Date(ano, mes - 1, dia).getTime()
 }
 
 function hoje(): MesAnoRef {
@@ -100,10 +91,6 @@ export function ProjetoModal({
   const [perpetuo, setPerpetuo] = useState(base.recorrente && base.dataFim === null)
   const [dataFim, setDataFim] = useState(paraInputMonth(base.dataFim ?? base.dataInicio))
   const [valoresPorMes, setValoresPorMes] = useState<number[]>(base.valoresPorMes)
-  const [subtarefas, setSubtarefas] = useState<Subtarefa[]>(base.subtarefas)
-  const [novaSubtarefa, setNovaSubtarefa] = useState('')
-  const [novaSubtarefaVencimento, setNovaSubtarefaVencimento] = useState('')
-  const [novaSubtarefaObs, setNovaSubtarefaObs] = useState('')
   const [valoresPontuais, setValoresPontuais] = useState<ValorPontual[]>(base.valoresPontuais ?? [])
   const [novoPontualMes, setNovoPontualMes] = useState(paraInputMonth(hoje()))
   const [novoPontualValor, setNovoPontualValor] = useState(0)
@@ -111,54 +98,6 @@ export function ProjetoModal({
 
   function atualizarValorMes(i: number, novoValor: number) {
     setValoresPorMes((prev) => prev.map((v, idx) => (idx === i ? novoValor : v)))
-  }
-
-  function adicionarSubtarefa() {
-    const nomeSub = novaSubtarefa.trim()
-    if (!nomeSub) return
-    const nova: Subtarefa = { id: crypto.randomUUID(), nome: nomeSub, concluida: false }
-    if (novaSubtarefaVencimento) nova.vencimento = deInputDate(novaSubtarefaVencimento)
-    if (novaSubtarefaObs.trim()) nova.obs = novaSubtarefaObs.trim()
-    setSubtarefas((prev) => [...prev, nova])
-    setNovaSubtarefa('')
-    setNovaSubtarefaVencimento('')
-    setNovaSubtarefaObs('')
-  }
-
-  function alternarSubtarefa(id: string) {
-    setSubtarefas((prev) => prev.map((s) => (s.id === id ? { ...s, concluida: !s.concluida } : s)))
-  }
-
-  function atualizarNomeSubtarefa(id: string, nomeNovo: string) {
-    setSubtarefas((prev) => prev.map((s) => (s.id === id ? { ...s, nome: nomeNovo } : s)))
-  }
-
-  function atualizarVencimentoSubtarefa(id: string, valorNovo: string) {
-    setSubtarefas((prev) =>
-      prev.map((s) => {
-        if (s.id !== id) return s
-        const atualizado = { ...s }
-        if (valorNovo) atualizado.vencimento = deInputDate(valorNovo)
-        else delete atualizado.vencimento
-        return atualizado
-      }),
-    )
-  }
-
-  function atualizarObsSubtarefa(id: string, valorNovo: string) {
-    setSubtarefas((prev) =>
-      prev.map((s) => {
-        if (s.id !== id) return s
-        const atualizado = { ...s }
-        if (valorNovo) atualizado.obs = valorNovo
-        else delete atualizado.obs
-        return atualizado
-      }),
-    )
-  }
-
-  function removerSubtarefa(id: string) {
-    setSubtarefas((prev) => prev.filter((s) => s.id !== id))
   }
 
   function adicionarValorPontual() {
@@ -182,7 +121,7 @@ export function ProjetoModal({
       dataFim: recorrente && perpetuo ? null : deInputMonth(dataFim),
       valoresPorMes,
       valoresPontuais,
-      subtarefas,
+      subtarefas: base.subtarefas,
       obs: obs.trim(),
     }
     onSave(dados)
@@ -307,94 +246,6 @@ export function ProjetoModal({
           <button type="button" className="btn" onClick={adicionarValorPontual} aria-label="Adicionar valor pontual">
             <Plus size={16} strokeWidth={1.5} />
           </button>
-        </div>
-      </div>
-
-      <div className="stack" style={{ gap: 6 }}>
-        <span className="text-dim text-sm">Subtarefas</span>
-        {subtarefas.length > 0 && (
-          <div className="stack" style={{ gap: 6 }}>
-            {[...subtarefas].sort(compararAtividades).map((s) => {
-              const vencida = subtarefaVencida(s)
-              return (
-                <div key={s.id} className="card stack" style={{ padding: '8px 12px', gap: 6 }}>
-                  <div className="row">
-                    <input
-                      type="checkbox"
-                      checked={s.concluida}
-                      onChange={() => alternarSubtarefa(s.id)}
-                      style={{ width: 18, height: 18, flexShrink: 0 }}
-                    />
-                    <input
-                      type="text"
-                      value={s.nome}
-                      onChange={(e) => atualizarNomeSubtarefa(s.id, e.target.value)}
-                      style={{
-                        flex: 1,
-                        textDecoration: s.concluida ? 'line-through' : undefined,
-                        opacity: s.concluida ? 0.6 : 1,
-                        color: vencida ? 'var(--danger)' : undefined,
-                      }}
-                    />
-                    <input
-                      type="date"
-                      value={s.vencimento ? paraInputDate(s.vencimento) : ''}
-                      onChange={(e) => atualizarVencimentoSubtarefa(s.id, e.target.value)}
-                      style={{ width: 150, color: vencida ? 'var(--danger)' : undefined }}
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      style={{ padding: '4px 8px' }}
-                      onClick={() => removerSubtarefa(s.id)}
-                      aria-label="Remover subtarefa"
-                    >
-                      <Trash2 size={15} strokeWidth={1.5} />
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={s.obs ?? ''}
-                    onChange={(e) => atualizarObsSubtarefa(s.id, e.target.value)}
-                    placeholder="Observação (opcional)"
-                    style={{ fontSize: 13 }}
-                  />
-                </div>
-              )
-            })}
-          </div>
-        )}
-        <div className="stack" style={{ gap: 6 }}>
-          <div className="row">
-            <input
-              placeholder="Nova subtarefa..."
-              value={novaSubtarefa}
-              onChange={(e) => setNovaSubtarefa(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  adicionarSubtarefa()
-                }
-              }}
-            />
-            <input
-              type="date"
-              value={novaSubtarefaVencimento}
-              onChange={(e) => setNovaSubtarefaVencimento(e.target.value)}
-              style={{ width: 150 }}
-              aria-label="Vencimento da nova subtarefa"
-            />
-            <button type="button" className="btn" onClick={adicionarSubtarefa} aria-label="Adicionar subtarefa">
-              <Plus size={16} strokeWidth={1.5} />
-            </button>
-          </div>
-          <input
-            type="text"
-            value={novaSubtarefaObs}
-            onChange={(e) => setNovaSubtarefaObs(e.target.value)}
-            placeholder="Observação (opcional)"
-            style={{ fontSize: 13 }}
-          />
         </div>
       </div>
 
