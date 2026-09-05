@@ -5,12 +5,19 @@ export interface MesAnoRef {
   ano: number
 }
 
+export interface Subatividade {
+  id: string
+  nome: string
+  concluida: boolean
+}
+
 export interface Subtarefa {
   id: string
   nome: string
   concluida: boolean
   vencimento?: number
   obs?: string
+  subatividades?: Subatividade[]
 }
 
 export interface ValorPontual {

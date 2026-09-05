@@ -12,7 +12,10 @@ import { ResumoPage } from './modules/financas/pages/ResumoPage'
 import { ExtratoListPage } from './modules/financas/pages/ExtratoListPage'
 import { DREPage } from './modules/financas/pages/DREPage'
 import { BoletosPage } from './modules/financas/pages/BoletosPage'
-import { ProjetosPage } from './modules/projetos/pages/ProjetosPage'
+import { ProjetosLayout } from './modules/projetos/ProjetosLayout'
+import { ProjetosListaPage } from './modules/projetos/pages/ProjetosListaPage'
+import { AtividadesPage } from './modules/projetos/pages/AtividadesPage'
+import { ProjecoesPage } from './modules/projetos/pages/ProjecoesPage'
 import { LivrosPage } from './modules/livros/pages/LivrosPage'
 import { ImportarExtratoPage } from './modules/financas/pages/ImportarExtratoPage'
 import { CategoriasPage } from './modules/financas/pages/CategoriasPage'
@@ -73,10 +76,14 @@ function App() {
         path="/projetos"
         element={
           <ProtectedRoute>
-            <ProjetosPage />
+            <ProjetosLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<ProjetosListaPage />} />
+        <Route path="atividades" element={<AtividadesPage />} />
+        <Route path="projecoes" element={<ProjecoesPage />} />
+      </Route>
 
       <Route
         path="/livros"
