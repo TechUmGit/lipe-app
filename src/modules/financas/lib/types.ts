@@ -92,6 +92,12 @@ export interface ConexaoBancaria {
   precisaSync?: boolean
 }
 
+export interface Boleto {
+  id: string
+  nome: string
+  ordem: number
+}
+
 export interface SyncLog {
   id: string
   itemId: string

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { DreTabelaAnual } from '../components/DreTabelaAnual'
 import { FinancasRefreshContext } from '../lib/FinancasRefreshContext'
+import { BoletosPage } from './BoletosPage'
 import { ExtratoListPage } from './ExtratoListPage'
 import { ResumoPage } from './ResumoPage'
 
@@ -22,6 +23,9 @@ export function FinancasDashboardDesktop() {
         </div>
         <div className="card">
           <DreTabelaAnual />
+        </div>
+        <div className="dashboard-pane">
+          <BoletosPage />
         </div>
       </div>
     </FinancasRefreshContext.Provider>

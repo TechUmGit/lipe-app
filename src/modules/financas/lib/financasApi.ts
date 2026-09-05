@@ -19,8 +19,9 @@ import {
   type QueryDocumentSnapshot,
 } from 'firebase/firestore'
 import { db } from '../../../core/firebase'
+import { BOLETOS_SEED } from './boletosSeed'
 import { CATEGORIAS_SEED, CATEGORIA_TRANSFERENCIA_NOME, CONTAS_SEED } from './categoriasSeed'
-import type { Categoria, DreAnotacao, DreCor, Lancamento, NovoLancamento } from './types'
+import type { Boleto, Categoria, DreAnotacao, DreCor, Lancamento, NovoLancamento } from './types'
 
 function mapLancamento(d: QueryDocumentSnapshot<DocumentData>): Lancamento {
   const data = d.data()
@@ -49,6 +50,10 @@ function seedMetaRef(uid: string) {
   return doc(db, 'users', uid, 'financas', 'seedMeta')
 }
 
+function boletosSeedMetaRef(uid: string) {
+  return doc(db, 'users', uid, 'financas', 'boletosSeedMeta')
+}
+
 function categoriasCol(uid: string) {
   return collection(db, 'users', uid, 'financas_categorias')
 }
@@ -63,6 +68,18 @@ function dreAnotacoesCol(uid: string) {
 
 function dreAnotacaoId(categoriaId: string, ano: number, mes: number) {
   return `${categoriaId}_${ano}_${mes}`
+}
+
+function boletosCol(uid: string) {
+  return collection(db, 'users', uid, 'financas_boletos')
+}
+
+function boletosStatusCol(uid: string) {
+  return collection(db, 'users', uid, 'financas_boletos_status')
+}
+
+function boletoStatusId(boletoId: string, ano: number, mes: number) {
+  return `${boletoId}_${ano}_${mes}`
 }
 
 export async function getContas(uid: string): Promise<string[]> {
@@ -203,6 +220,51 @@ export async function dividirLancamento(uid: string, original: Lancamento, parte
     batch.set(ref, novo)
   }
   await batch.commit()
+}
+
+export async function getBoletos(uid: string): Promise<Boleto[]> {
+  const snap = await getDocs(boletosCol(uid))
+  const boletos = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Boleto)
+  return boletos.sort((a, b) => a.ordem - b.ordem)
+}
+
+export async function garantirSeedBoletos(uid: string) {
+  const jaSemeado = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(boletosSeedMetaRef(uid))
+    if (snap.exists()) return true
+    tx.set(boletosSeedMetaRef(uid), { seededAt: Date.now() })
+    return false
+  })
+  if (jaSemeado) return
+
+  const batch = writeBatch(db)
+  BOLETOS_SEED.forEach((nome, i) => {
+    batch.set(doc(boletosCol(uid)), { nome, ordem: i })
+  })
+  await batch.commit()
+}
+
+export async function criarBoleto(uid: string, nome: string, ordem: number) {
+  await addDoc(boletosCol(uid), { nome, ordem })
+}
+
+export async function removerBoleto(uid: string, id: string) {
+  await deleteDoc(doc(boletosCol(uid), id))
+}
+
+export async function getBoletosPagos(uid: string, ano: number, mes: number): Promise<Set<string>> {
+  const q = query(boletosStatusCol(uid), where('ano', '==', ano), where('mes', '==', mes))
+  const snap = await getDocs(q)
+  return new Set(snap.docs.map((d) => d.data().boletoId as string))
+}
+
+export async function definirBoletoPago(uid: string, boletoId: string, ano: number, mes: number, pago: boolean) {
+  const id = boletoStatusId(boletoId, ano, mes)
+  if (!pago) {
+    await deleteDoc(doc(boletosStatusCol(uid), id))
+    return
+  }
+  await setDoc(doc(boletosStatusCol(uid), id), { boletoId, ano, mes, pagoEm: Date.now() })
 }
 
 export async function getDreAnotacoesPorAno(uid: string, ano: number): Promise<DreAnotacao[]> {
