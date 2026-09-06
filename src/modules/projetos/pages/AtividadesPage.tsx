@@ -8,6 +8,7 @@ import {
   COLUNAS_KANBAN,
   type ColunaKanban,
   colunaKanban,
+  comConclusaoAutomatica,
   compararAtividades,
   subtarefaVencida,
 } from '../lib/calculo'
@@ -20,6 +21,17 @@ const COR_COLUNA: Record<ColunaKanban, string> = {
   semana: 'var(--blue)',
   em_breve: 'var(--accent)',
   concluido: 'var(--success)',
+}
+
+interface ItemAtividade {
+  projeto: Projeto
+  subtarefa: Subtarefa
+  /** presente quando este item representa uma subatividade, não a atividade em si */
+  subatividade?: Subatividade
+}
+
+function registroDoItem(item: ItemAtividade): Subtarefa | Subatividade {
+  return item.subatividade ?? item.subtarefa
 }
 
 function formatarData(ms: number) {
@@ -165,6 +177,7 @@ export function AtividadesPage() {
   const [gruposColapsados, setGruposColapsados] = useState<Set<ColunaKanban>>(new Set())
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
   const [novoNome, setNovoNome] = useState('')
+  const [novaPrimeiraSubatividade, setNovaPrimeiraSubatividade] = useState('')
   const [novoProjetoId, setNovoProjetoId] = useState('')
   const [novoVencimento, setNovoVencimento] = useState('')
   const [novoResponsavel, setNovoResponsavel] = useState('')
@@ -181,18 +194,30 @@ export function AtividadesPage() {
 
   const ativos = useMemo(() => projetos.filter((p) => p.status !== 'cancelado'), [projetos])
 
-  const atividades = useMemo(() => {
-    const itens = ativos.flatMap((p) => p.subtarefas.map((s) => ({ projeto: p, subtarefa: s })))
-    return itens.sort((a, b) => compararAtividades(a.subtarefa, b.subtarefa))
+  const itens = useMemo(() => {
+    const lista: ItemAtividade[] = []
+    for (const projeto of ativos) {
+      for (const subtarefa of projeto.subtarefas) {
+        const subatividades = subtarefa.subatividades ?? []
+        if (subatividades.length === 0) {
+          lista.push({ projeto, subtarefa })
+        } else {
+          for (const subatividade of subatividades) {
+            lista.push({ projeto, subtarefa, subatividade })
+          }
+        }
+      }
+    }
+    return lista.sort((a, b) => compararAtividades(registroDoItem(a), registroDoItem(b)))
   }, [ativos])
 
   const kanban = useMemo(
     () =>
       COLUNAS_KANBAN.map((coluna) => ({
         ...coluna,
-        itens: atividades.filter(({ subtarefa }) => colunaKanban(subtarefa) === coluna.id),
+        itens: itens.filter((item) => colunaKanban(registroDoItem(item)) === coluna.id),
       })),
-    [atividades],
+    [itens],
   )
 
   function alternarGrupoColapsado(id: ColunaKanban) {
@@ -233,7 +258,7 @@ export function AtividadesPage() {
     const novas = projeto.subtarefas.map((s) => {
       if (s.id !== subtarefaId) return s
       const subs = (s.subatividades ?? []).map((sub) => (sub.id === subId ? { ...sub, concluida: !sub.concluida } : sub))
-      return { ...s, subatividades: subs }
+      return comConclusaoAutomatica({ ...s, subatividades: subs })
     })
     salvarSubtarefas(projeto, novas)
   }
@@ -243,7 +268,7 @@ export function AtividadesPage() {
       if (s.id !== subtarefaId) return s
       const nova: Subatividade = { id: crypto.randomUUID(), nome, concluida: false }
       if (vencimento) nova.vencimento = vencimento
-      return { ...s, subatividades: [...(s.subatividades ?? []), nova] }
+      return comConclusaoAutomatica({ ...s, subatividades: [...(s.subatividades ?? []), nova] })
     })
     salvarSubtarefas(projeto, novas)
   }
@@ -271,7 +296,7 @@ export function AtividadesPage() {
   function removerSubatividade(projeto: Projeto, subtarefaId: string, subId: string) {
     const novas = projeto.subtarefas.map((s) => {
       if (s.id !== subtarefaId) return s
-      return { ...s, subatividades: (s.subatividades ?? []).filter((sub) => sub.id !== subId) }
+      return comConclusaoAutomatica({ ...s, subatividades: (s.subatividades ?? []).filter((sub) => sub.id !== subId) })
     })
     salvarSubtarefas(projeto, novas)
   }
@@ -287,67 +312,154 @@ export function AtividadesPage() {
       else delete atualizado.obs
       if (dados.responsavel) atualizado.responsavel = dados.responsavel
       else delete atualizado.responsavel
-      return atualizado
+      if (dados.novasSubatividades && dados.novasSubatividades.length > 0) {
+        atualizado.subatividades = [...(atualizado.subatividades ?? []), ...dados.novasSubatividades]
+      }
+      return comConclusaoAutomatica(atualizado)
     })
     salvarSubtarefas(editando.projeto, novas)
   }
 
   async function adicionarAtividade() {
     const nome = novoNome.trim()
+    const primeiraSubatividade = novaPrimeiraSubatividade.trim()
     const projeto = ativos.find((p) => p.id === novoProjetoId)
-    if (!nome || !projeto) return
-    const nova: Subtarefa = { id: crypto.randomUUID(), nome, concluida: false }
+    if (!nome || !primeiraSubatividade || !projeto) return
+    const nova: Subtarefa = {
+      id: crypto.randomUUID(),
+      nome,
+      concluida: false,
+      subatividades: [{ id: crypto.randomUUID(), nome: primeiraSubatividade, concluida: false }],
+    }
     if (novoVencimento) nova.vencimento = deInputDate(novoVencimento)
     if (novoResponsavel) nova.responsavel = novoResponsavel
     await salvarSubtarefas(projeto, [...projeto.subtarefas, nova])
     setNovoNome('')
+    setNovaPrimeiraSubatividade('')
     setNovoVencimento('')
     setNovoResponsavel('')
   }
 
-  function renderCartao(projeto: Projeto, subtarefa: Subtarefa) {
-    const vencida = subtarefaVencida(subtarefa)
-    const expandido = expandidos.has(subtarefa.id)
-    const subatividades = subtarefa.subatividades ?? []
+  function renderCartao(item: ItemAtividade) {
+    const { projeto, subtarefa, subatividade } = item
 
+    if (!subatividade) {
+      // Atividade legada sem subatividades ainda — precisa ganhar a primeira pra virar o novo modelo.
+      const vencida = subtarefaVencida(subtarefa)
+      const expandido = expandidos.has(subtarefa.id)
+      return (
+        <div key={subtarefa.id} className="card" style={{ padding: '10px 14px' }}>
+          <div className="row" style={{ gap: 8, alignItems: 'flex-start' }}>
+            <button
+              type="button"
+              className="atividade-chevron"
+              onClick={() => alternarExpandido(subtarefa.id)}
+              aria-label={expandido ? 'Recolher subatividades' : 'Expandir subatividades'}
+            >
+              <ChevronRight
+                size={14}
+                strokeWidth={1.5}
+                style={{ transform: expandido ? 'rotate(90deg)' : undefined, transition: 'transform 0.15s' }}
+              />
+            </button>
+            <input
+              type="checkbox"
+              checked={subtarefa.concluida}
+              onChange={() => alternarConcluida(projeto, subtarefa.id)}
+              style={{ width: 18, height: 18, flexShrink: 0, marginTop: 2 }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p
+                className="text-sm"
+                style={{
+                  textDecoration: subtarefa.concluida ? 'line-through' : undefined,
+                  opacity: subtarefa.concluida ? 0.6 : 1,
+                  color: vencida ? 'var(--danger)' : undefined,
+                }}
+              >
+                {subtarefa.nome}
+              </p>
+              <div className="row-between text-dim text-sm">
+                <span>
+                  {projeto.nome}
+                  {subtarefa.responsavel ? ` · ${subtarefa.responsavel}` : ''}
+                </span>
+                <span style={{ whiteSpace: 'nowrap', color: vencida ? 'var(--danger)' : undefined }}>
+                  {subtarefa.vencimento ? formatarData(subtarefa.vencimento) : '—'}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ padding: '4px 8px' }}
+              onClick={() => setEditando({ projeto, subtarefa })}
+              aria-label="Editar atividade"
+            >
+              <Pencil size={15} strokeWidth={1.5} />
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ padding: '4px 8px' }}
+              onClick={() => removerAtividade(projeto, subtarefa.id)}
+              aria-label="Excluir atividade"
+            >
+              <Trash2 size={15} strokeWidth={1.5} />
+            </button>
+          </div>
+          {expandido && (
+            <div style={{ marginTop: 8, marginLeft: 22, padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 10 }}>
+              <PainelSubatividades
+                subatividades={[]}
+                vencimentoMaximo={subtarefa.vencimento}
+                onToggle={(id) => alternarSubatividade(projeto, subtarefa.id, id)}
+                onAdicionar={(nome, vencimento) => adicionarSubatividade(projeto, subtarefa.id, nome, vencimento)}
+                onEditar={(sub) => setEditandoSub({ projeto, subtarefa, subatividade: sub })}
+                onRemover={(id) => removerSubatividade(projeto, subtarefa.id, id)}
+              />
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // Subatividade — a unidade de trabalho de verdade, cada uma com sua própria data.
+    const vencida = subtarefaVencida(subatividade)
     return (
-      <div key={subtarefa.id} className="card" style={{ padding: '10px 14px' }}>
+      <div key={subatividade.id} className="card" style={{ padding: '10px 14px' }}>
         <div className="row" style={{ gap: 8, alignItems: 'flex-start' }}>
-          <button
-            type="button"
-            className="atividade-chevron"
-            onClick={() => alternarExpandido(subtarefa.id)}
-            aria-label={expandido ? 'Recolher subatividades' : 'Expandir subatividades'}
-          >
-            <ChevronRight size={14} strokeWidth={1.5} style={{ transform: expandido ? 'rotate(90deg)' : undefined, transition: 'transform 0.15s' }} />
-          </button>
           <input
             type="checkbox"
-            checked={subtarefa.concluida}
-            onChange={() => alternarConcluida(projeto, subtarefa.id)}
+            checked={subatividade.concluida}
+            onChange={() => alternarSubatividade(projeto, subtarefa.id, subatividade.id)}
             style={{ width: 18, height: 18, flexShrink: 0, marginTop: 2 }}
           />
           <div style={{ flex: 1, minWidth: 0 }}>
             <p
               className="text-sm"
               style={{
-                textDecoration: subtarefa.concluida ? 'line-through' : undefined,
-                opacity: subtarefa.concluida ? 0.6 : 1,
+                textDecoration: subatividade.concluida ? 'line-through' : undefined,
+                opacity: subatividade.concluida ? 0.6 : 1,
                 color: vencida ? 'var(--danger)' : undefined,
               }}
             >
-              {subtarefa.nome}
+              {subatividade.nome}
             </p>
             <div className="row-between text-dim text-sm">
               <span>
+                <span
+                  onClick={() => setEditando({ projeto, subtarefa })}
+                  style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  {subtarefa.nome}
+                </span>
+                {' · '}
                 {projeto.nome}
                 {subtarefa.responsavel ? ` · ${subtarefa.responsavel}` : ''}
               </span>
               <span style={{ whiteSpace: 'nowrap', color: vencida ? 'var(--danger)' : undefined }}>
-                {subtarefa.vencimento ? formatarData(subtarefa.vencimento) : '—'}
-                {subatividades.length > 0
-                  ? ` · ${subatividades.filter((s) => s.concluida).length}/${subatividades.length}`
-                  : ''}
+                {subatividade.vencimento ? formatarData(subatividade.vencimento) : '—'}
               </span>
             </div>
           </div>
@@ -355,8 +467,8 @@ export function AtividadesPage() {
             type="button"
             className="btn btn-ghost"
             style={{ padding: '4px 8px' }}
-            onClick={() => setEditando({ projeto, subtarefa })}
-            aria-label="Editar atividade"
+            onClick={() => setEditandoSub({ projeto, subtarefa, subatividade })}
+            aria-label="Editar subatividade"
           >
             <Pencil size={15} strokeWidth={1.5} />
           </button>
@@ -364,27 +476,17 @@ export function AtividadesPage() {
             type="button"
             className="btn btn-ghost"
             style={{ padding: '4px 8px' }}
-            onClick={() => removerAtividade(projeto, subtarefa.id)}
-            aria-label="Excluir atividade"
+            onClick={() => removerSubatividade(projeto, subtarefa.id, subatividade.id)}
+            aria-label="Excluir subatividade"
           >
             <Trash2 size={15} strokeWidth={1.5} />
           </button>
         </div>
-        {expandido && (
-          <div style={{ marginTop: 8, marginLeft: 22, padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 10 }}>
-            <PainelSubatividades
-              subatividades={subatividades}
-              vencimentoMaximo={subtarefa.vencimento}
-              onToggle={(id) => alternarSubatividade(projeto, subtarefa.id, id)}
-              onAdicionar={(nome, vencimento) => adicionarSubatividade(projeto, subtarefa.id, nome, vencimento)}
-              onEditar={(subatividade) => setEditandoSub({ projeto, subtarefa, subatividade })}
-              onRemover={(id) => removerSubatividade(projeto, subtarefa.id, id)}
-            />
-          </div>
-        )}
       </div>
     )
   }
+
+  const pessoasDoNovoProjeto = ativos.find((p) => p.id === novoProjetoId)?.pessoasEnvolvidas ?? []
 
   return (
     <div className="stack">
@@ -419,6 +521,11 @@ export function AtividadesPage() {
           placeholder="Nova atividade..."
           value={novoNome}
           onChange={(e) => setNovoNome(e.target.value)}
+        />
+        <input
+          placeholder="Primeira subatividade (obrigatória)..."
+          value={novaPrimeiraSubatividade}
+          onChange={(e) => setNovaPrimeiraSubatividade(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault()
@@ -449,18 +556,20 @@ export function AtividadesPage() {
             style={{ flex: 1, minWidth: 130 }}
             aria-label="Vencimento da nova atividade"
           />
-          <button type="button" className="btn" onClick={adicionarAtividade} aria-label="Adicionar atividade">
+          <button
+            type="button"
+            className="btn"
+            onClick={adicionarAtividade}
+            disabled={!novoNome.trim() || !novaPrimeiraSubatividade.trim() || !novoProjetoId}
+            aria-label="Adicionar atividade"
+          >
             <Plus size={16} strokeWidth={1.5} />
           </button>
         </div>
-        {(ativos.find((p) => p.id === novoProjetoId)?.pessoasEnvolvidas ?? []).length > 0 && (
-          <select
-            value={novoResponsavel}
-            onChange={(e) => setNovoResponsavel(e.target.value)}
-            aria-label="Responsável pela nova atividade"
-          >
+        {pessoasDoNovoProjeto.length > 0 && (
+          <select value={novoResponsavel} onChange={(e) => setNovoResponsavel(e.target.value)} aria-label="Responsável pela nova atividade">
             <option value="">Responsável...</option>
-            {(ativos.find((p) => p.id === novoProjetoId)?.pessoasEnvolvidas ?? []).map((p) => (
+            {pessoasDoNovoProjeto.map((p) => (
               <option key={p} value={p}>
                 {p}
               </option>
@@ -471,7 +580,7 @@ export function AtividadesPage() {
 
       {loading ? (
         <p className="text-dim">Carregando...</p>
-      ) : atividades.length === 0 ? (
+      ) : itens.length === 0 ? (
         <p className="text-dim text-sm">Nenhuma atividade lançada ainda.</p>
       ) : visao === 'kanban' && isDesktop ? (
         <div className="kanban-board">
@@ -486,35 +595,38 @@ export function AtividadesPage() {
               {coluna.itens.length === 0 ? (
                 <p className="text-dim text-sm">—</p>
               ) : (
-                coluna.itens.map(({ projeto, subtarefa }) => {
-                  const vencida = subtarefaVencida(subtarefa)
-                  const subatividades = subtarefa.subatividades ?? []
+                coluna.itens.map((item) => {
+                  const registro = registroDoItem(item)
+                  const vencida = subtarefaVencida(registro)
                   return (
-                    <label key={subtarefa.id} className="card kanban-cartao">
+                    <label
+                      key={item.subatividade ? item.subatividade.id : item.subtarefa.id}
+                      className="card kanban-cartao"
+                    >
                       <input
                         type="checkbox"
-                        checked={subtarefa.concluida}
-                        onChange={() => alternarConcluida(projeto, subtarefa.id)}
+                        checked={registro.concluida}
+                        onChange={() =>
+                          item.subatividade
+                            ? alternarSubatividade(item.projeto, item.subtarefa.id, item.subatividade.id)
+                            : alternarConcluida(item.projeto, item.subtarefa.id)
+                        }
                         style={{ width: 18, height: 18, flexShrink: 0, marginTop: 2 }}
                       />
                       <div style={{ minWidth: 0 }}>
                         <p
                           className="text-sm"
                           style={{
-                            textDecoration: subtarefa.concluida ? 'line-through' : undefined,
-                            opacity: subtarefa.concluida ? 0.6 : 1,
+                            textDecoration: registro.concluida ? 'line-through' : undefined,
+                            opacity: registro.concluida ? 0.6 : 1,
                             color: vencida ? 'var(--danger)' : undefined,
                           }}
                         >
-                          {subtarefa.nome}
+                          {item.subatividade ? item.subatividade.nome : item.subtarefa.nome}
                         </p>
                         <p className="text-dim text-sm" style={{ color: vencida ? 'var(--danger)' : undefined }}>
-                          {projeto.nome}
-                          {subtarefa.responsavel ? ` · ${subtarefa.responsavel}` : ''}
-                          {subtarefa.vencimento ? ` · ${formatarData(subtarefa.vencimento)}` : ''}
-                          {subatividades.length > 0
-                            ? ` · ${subatividades.filter((s) => s.concluida).length}/${subatividades.length}`
-                            : ''}
+                          {item.subatividade ? `${item.subtarefa.nome} · ${item.projeto.nome}` : item.projeto.nome}
+                          {registro.vencimento ? ` · ${formatarData(registro.vencimento)}` : ''}
                         </p>
                       </div>
                     </label>
@@ -541,11 +653,7 @@ export function AtividadesPage() {
                   {coluna.label.toUpperCase()}
                   <span className="status-pill-count">{coluna.itens.length}</span>
                 </button>
-                {!colapsado && (
-                  <div className="stack" style={{ gap: 8 }}>
-                    {coluna.itens.map(({ projeto, subtarefa }) => renderCartao(projeto, subtarefa))}
-                  </div>
-                )}
+                {!colapsado && <div className="stack" style={{ gap: 8 }}>{coluna.itens.map((item) => renderCartao(item))}</div>}
               </div>
             )
           })}

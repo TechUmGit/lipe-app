@@ -47,6 +47,13 @@ export function subtarefaVencida(s: Pick<Subtarefa, 'concluida' | 'vencimento'>)
   return s.vencimento < hoje.getTime()
 }
 
+/** Quando a atividade tem subatividades, sua conclusão passa a ser derivada delas (todas concluídas = atividade concluída). */
+export function comConclusaoAutomatica(s: Subtarefa): Subtarefa {
+  const subatividades = s.subatividades ?? []
+  if (subatividades.length === 0) return s
+  return { ...s, concluida: subatividades.every((sub) => sub.concluida) }
+}
+
 /** Pendentes antes de concluídas; dentro de cada grupo, vencimento mais próximo primeiro (sem data, por último). */
 export function compararAtividades(a: Subtarefa, b: Subtarefa): number {
   const porStatus = Number(a.concluida) - Number(b.concluida)

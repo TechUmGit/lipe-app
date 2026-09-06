@@ -1,6 +1,7 @@
+import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Modal } from '../../../shared/components/Modal'
-import type { Subtarefa } from '../lib/types'
+import type { Subatividade, Subtarefa } from '../lib/types'
 
 function paraInputDate(ms: number) {
   return new Date(ms).toISOString().slice(0, 10)
@@ -11,11 +12,16 @@ function deInputDate(valor: string) {
   return new Date(ano, mes - 1, dia).getTime()
 }
 
+function formatarData(ms: number) {
+  return new Date(ms).toLocaleDateString('pt-BR')
+}
+
 export interface DadosEdicaoAtividade {
   nome: string
   vencimento?: number
   obs?: string
   responsavel?: string
+  novasSubatividades?: Subatividade[]
 }
 
 export function EditarAtividadeModal({
@@ -33,6 +39,35 @@ export function EditarAtividadeModal({
   const [vencimento, setVencimento] = useState(subtarefa.vencimento ? paraInputDate(subtarefa.vencimento) : '')
   const [obs, setObs] = useState(subtarefa.obs ?? '')
   const [responsavel, setResponsavel] = useState(subtarefa.responsavel ?? '')
+  const [novasSubatividades, setNovasSubatividades] = useState<Subatividade[]>([])
+  const [textoNovaSub, setTextoNovaSub] = useState('')
+  const [dataNovaSub, setDataNovaSub] = useState('')
+  const [erroSub, setErroSub] = useState('')
+
+  const vencimentoMs = vencimento ? deInputDate(vencimento) : undefined
+  const maxSubInput = vencimentoMs !== undefined ? paraInputDate(vencimentoMs - 24 * 60 * 60 * 1000) : undefined
+
+  function adicionarSubatividadeLocal() {
+    const nomeSub = textoNovaSub.trim()
+    if (!nomeSub) return
+    const nova: Subatividade = { id: crypto.randomUUID(), nome: nomeSub, concluida: false }
+    if (dataNovaSub) {
+      const ms = deInputDate(dataNovaSub)
+      if (vencimentoMs !== undefined && ms >= vencimentoMs) {
+        setErroSub('A validade precisa ser antes do vencimento da atividade.')
+        return
+      }
+      nova.vencimento = ms
+    }
+    setNovasSubatividades((prev) => [...prev, nova])
+    setTextoNovaSub('')
+    setDataNovaSub('')
+    setErroSub('')
+  }
+
+  function removerSubatividadeLocal(id: string) {
+    setNovasSubatividades((prev) => prev.filter((s) => s.id !== id))
+  }
 
   function salvar() {
     const nomeAparado = nome.trim()
@@ -41,6 +76,7 @@ export function EditarAtividadeModal({
     if (vencimento) dados.vencimento = deInputDate(vencimento)
     if (obs.trim()) dados.obs = obs.trim()
     if (responsavel) dados.responsavel = responsavel
+    if (novasSubatividades.length > 0) dados.novasSubatividades = novasSubatividades
     onSave(dados)
     onClose()
   }
@@ -77,6 +113,66 @@ export function EditarAtividadeModal({
         Observação
         <textarea rows={3} value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Opcional" />
       </label>
+
+      <div className="stack" style={{ gap: 6 }}>
+        <span className="text-dim text-sm">Adicionar subatividade</span>
+        {novasSubatividades.length > 0 && (
+          <div className="stack" style={{ gap: 6 }}>
+            {novasSubatividades.map((s) => (
+              <div key={s.id} className="row-between card" style={{ padding: '8px 12px' }}>
+                <span className="text-sm">
+                  {s.nome}
+                  {s.vencimento ? ` · ${formatarData(s.vencimento)}` : ''}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ padding: '4px 8px' }}
+                  onClick={() => removerSubatividadeLocal(s.id)}
+                  aria-label="Remover subatividade"
+                >
+                  <Trash2 size={15} strokeWidth={1.5} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="row">
+          <input
+            placeholder="Nome da subatividade..."
+            value={textoNovaSub}
+            onChange={(e) => setTextoNovaSub(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                adicionarSubatividadeLocal()
+              }
+            }}
+            style={{ flex: 2 }}
+          />
+          <input
+            type="date"
+            value={dataNovaSub}
+            onChange={(e) => {
+              setDataNovaSub(e.target.value)
+              setErroSub('')
+            }}
+            max={maxSubInput}
+            style={{ flex: 1, minWidth: 130 }}
+            aria-label="Validade da nova subatividade"
+          />
+          <button
+            type="button"
+            className="btn btn-ghost"
+            style={{ padding: '4px 8px' }}
+            onClick={adicionarSubatividadeLocal}
+            aria-label="Adicionar subatividade"
+          >
+            <Plus size={16} strokeWidth={1.5} />
+          </button>
+        </div>
+        {erroSub && <p className="error-text">{erroSub}</p>}
+      </div>
 
       <button type="button" className="btn btn-primary" onClick={salvar}>
         Salvar
