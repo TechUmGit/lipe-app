@@ -95,6 +95,8 @@ export function ProjetoModal({
   const [novoPontualMes, setNovoPontualMes] = useState(paraInputMonth(hoje()))
   const [novoPontualValor, setNovoPontualValor] = useState(0)
   const [obs, setObs] = useState(base.obs ?? '')
+  const [pessoasEnvolvidas, setPessoasEnvolvidas] = useState<string[]>(base.pessoasEnvolvidas ?? [])
+  const [novaPessoa, setNovaPessoa] = useState('')
 
   function atualizarValorMes(i: number, novoValor: number) {
     setValoresPorMes((prev) => prev.map((v, idx) => (idx === i ? novoValor : v)))
@@ -111,6 +113,17 @@ export function ProjetoModal({
     setValoresPontuais((prev) => prev.filter((v) => v.id !== id))
   }
 
+  function adicionarPessoa() {
+    const nomePessoa = novaPessoa.trim()
+    if (!nomePessoa || pessoasEnvolvidas.includes(nomePessoa)) return
+    setPessoasEnvolvidas((prev) => [...prev, nomePessoa])
+    setNovaPessoa('')
+  }
+
+  function removerPessoa(nomePessoa: string) {
+    setPessoasEnvolvidas((prev) => prev.filter((p) => p !== nomePessoa))
+  }
+
   function salvar() {
     if (!nome.trim()) return
     const dados: NovoProjeto = {
@@ -123,6 +136,7 @@ export function ProjetoModal({
       valoresPontuais,
       subtarefas: base.subtarefas,
       obs: obs.trim(),
+      pessoasEnvolvidas,
     }
     onSave(dados)
     onClose()
@@ -244,6 +258,35 @@ export function ProjetoModal({
           />
           <MoedaInput valor={novoPontualValor} onChange={setNovoPontualValor} style={{ flex: 1 }} />
           <button type="button" className="btn" onClick={adicionarValorPontual} aria-label="Adicionar valor pontual">
+            <Plus size={16} strokeWidth={1.5} />
+          </button>
+        </div>
+      </div>
+
+      <div className="stack" style={{ gap: 6 }}>
+        <span className="text-dim text-sm">Pessoas envolvidas</span>
+        {pessoasEnvolvidas.length > 0 && (
+          <div className="chip-grid">
+            {pessoasEnvolvidas.map((p) => (
+              <button key={p} type="button" className="chip active" onClick={() => removerPessoa(p)}>
+                {p} ✕
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="row">
+          <input
+            placeholder="Nome da pessoa..."
+            value={novaPessoa}
+            onChange={(e) => setNovaPessoa(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                adicionarPessoa()
+              }
+            }}
+          />
+          <button type="button" className="btn" onClick={adicionarPessoa} aria-label="Adicionar pessoa">
             <Plus size={16} strokeWidth={1.5} />
           </button>
         </div>

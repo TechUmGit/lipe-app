@@ -139,6 +139,9 @@ export function ProjetosListaPage() {
                           <p className="text-dim text-sm">
                             {formatarMoeda(anual)}/ano · {formatarMoeda(anual / 12)}/mês
                           </p>
+                          {p.pessoasEnvolvidas && p.pessoasEnvolvidas.length > 0 && (
+                            <p className="text-dim text-sm">{p.pessoasEnvolvidas.join(', ')}</p>
+                          )}
                         </div>
                       )
                     })}
@@ -165,6 +168,7 @@ export function ProjetosListaPage() {
                             <div>
                               {formatarMoeda(anual)}/ano · {formatarMoeda(anual / 12)}/mês
                             </div>
+                            {p.pessoasEnvolvidas && p.pessoasEnvolvidas.length > 0 && <div>{p.pessoasEnvolvidas.join(', ')}</div>}
                           </div>
                         </div>
                       )

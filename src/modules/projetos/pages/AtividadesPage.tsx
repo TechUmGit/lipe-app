@@ -167,6 +167,7 @@ export function AtividadesPage() {
   const [novoNome, setNovoNome] = useState('')
   const [novoProjetoId, setNovoProjetoId] = useState('')
   const [novoVencimento, setNovoVencimento] = useState('')
+  const [novoResponsavel, setNovoResponsavel] = useState('')
   const [editando, setEditando] = useState<{ projeto: Projeto; subtarefa: Subtarefa } | null>(null)
   const [editandoSub, setEditandoSub] = useState<{ projeto: Projeto; subtarefa: Subtarefa; subatividade: Subatividade } | null>(null)
 
@@ -284,6 +285,8 @@ export function AtividadesPage() {
       else delete atualizado.vencimento
       if (dados.obs) atualizado.obs = dados.obs
       else delete atualizado.obs
+      if (dados.responsavel) atualizado.responsavel = dados.responsavel
+      else delete atualizado.responsavel
       return atualizado
     })
     salvarSubtarefas(editando.projeto, novas)
@@ -295,9 +298,11 @@ export function AtividadesPage() {
     if (!nome || !projeto) return
     const nova: Subtarefa = { id: crypto.randomUUID(), nome, concluida: false }
     if (novoVencimento) nova.vencimento = deInputDate(novoVencimento)
+    if (novoResponsavel) nova.responsavel = novoResponsavel
     await salvarSubtarefas(projeto, [...projeto.subtarefas, nova])
     setNovoNome('')
     setNovoVencimento('')
+    setNovoResponsavel('')
   }
 
   function renderCartao(projeto: Projeto, subtarefa: Subtarefa) {
@@ -334,7 +339,10 @@ export function AtividadesPage() {
               {subtarefa.nome}
             </p>
             <div className="row-between text-dim text-sm">
-              <span>{projeto.nome}</span>
+              <span>
+                {projeto.nome}
+                {subtarefa.responsavel ? ` · ${subtarefa.responsavel}` : ''}
+              </span>
               <span style={{ whiteSpace: 'nowrap', color: vencida ? 'var(--danger)' : undefined }}>
                 {subtarefa.vencimento ? formatarData(subtarefa.vencimento) : '—'}
                 {subatividades.length > 0
@@ -419,7 +427,14 @@ export function AtividadesPage() {
           }}
         />
         <div className="row">
-          <select value={novoProjetoId} onChange={(e) => setNovoProjetoId(e.target.value)} style={{ flex: 2 }}>
+          <select
+            value={novoProjetoId}
+            onChange={(e) => {
+              setNovoProjetoId(e.target.value)
+              setNovoResponsavel('')
+            }}
+            style={{ flex: 2 }}
+          >
             <option value="">Projeto...</option>
             {ativos.map((p) => (
               <option key={p.id} value={p.id}>
@@ -438,6 +453,20 @@ export function AtividadesPage() {
             <Plus size={16} strokeWidth={1.5} />
           </button>
         </div>
+        {(ativos.find((p) => p.id === novoProjetoId)?.pessoasEnvolvidas ?? []).length > 0 && (
+          <select
+            value={novoResponsavel}
+            onChange={(e) => setNovoResponsavel(e.target.value)}
+            aria-label="Responsável pela nova atividade"
+          >
+            <option value="">Responsável...</option>
+            {(ativos.find((p) => p.id === novoProjetoId)?.pessoasEnvolvidas ?? []).map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {loading ? (
@@ -481,6 +510,7 @@ export function AtividadesPage() {
                         </p>
                         <p className="text-dim text-sm" style={{ color: vencida ? 'var(--danger)' : undefined }}>
                           {projeto.nome}
+                          {subtarefa.responsavel ? ` · ${subtarefa.responsavel}` : ''}
                           {subtarefa.vencimento ? ` · ${formatarData(subtarefa.vencimento)}` : ''}
                           {subatividades.length > 0
                             ? ` · ${subatividades.filter((s) => s.concluida).length}/${subatividades.length}`
@@ -525,6 +555,7 @@ export function AtividadesPage() {
       {editando && (
         <EditarAtividadeModal
           subtarefa={editando.subtarefa}
+          pessoasDisponiveis={editando.projeto.pessoasEnvolvidas ?? []}
           onClose={() => setEditando(null)}
           onSave={salvarEdicaoAtividade}
         />

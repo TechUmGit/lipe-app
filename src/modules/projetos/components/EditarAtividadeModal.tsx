@@ -15,20 +15,24 @@ export interface DadosEdicaoAtividade {
   nome: string
   vencimento?: number
   obs?: string
+  responsavel?: string
 }
 
 export function EditarAtividadeModal({
   subtarefa,
+  pessoasDisponiveis,
   onClose,
   onSave,
 }: {
   subtarefa: Subtarefa
+  pessoasDisponiveis: string[]
   onClose: () => void
   onSave: (dados: DadosEdicaoAtividade) => void
 }) {
   const [nome, setNome] = useState(subtarefa.nome)
   const [vencimento, setVencimento] = useState(subtarefa.vencimento ? paraInputDate(subtarefa.vencimento) : '')
   const [obs, setObs] = useState(subtarefa.obs ?? '')
+  const [responsavel, setResponsavel] = useState(subtarefa.responsavel ?? '')
 
   function salvar() {
     const nomeAparado = nome.trim()
@@ -36,6 +40,7 @@ export function EditarAtividadeModal({
     const dados: DadosEdicaoAtividade = { nome: nomeAparado }
     if (vencimento) dados.vencimento = deInputDate(vencimento)
     if (obs.trim()) dados.obs = obs.trim()
+    if (responsavel) dados.responsavel = responsavel
     onSave(dados)
     onClose()
   }
@@ -54,6 +59,18 @@ export function EditarAtividadeModal({
       <label>
         Vencimento
         <input type="date" value={vencimento} onChange={(e) => setVencimento(e.target.value)} />
+      </label>
+
+      <label>
+        Responsável
+        <select value={responsavel} onChange={(e) => setResponsavel(e.target.value)}>
+          <option value="">Ninguém</option>
+          {pessoasDisponiveis.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
       </label>
 
       <label>

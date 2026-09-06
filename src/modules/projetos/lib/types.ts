@@ -19,6 +19,7 @@ export interface Subtarefa {
   vencimento?: number
   obs?: string
   subatividades?: Subatividade[]
+  responsavel?: string
 }
 
 export interface ValorPontual {
@@ -42,6 +43,7 @@ export interface Projeto {
   valoresPontuais?: ValorPontual[]
   subtarefas: Subtarefa[]
   obs?: string
+  pessoasEnvolvidas?: string[]
   criadoEm: number
 }
 
