@@ -371,7 +371,7 @@ export function AtividadesPage() {
           </button>
         </div>
         {expandido && (
-          <div style={{ marginTop: 8, paddingLeft: 26, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+          <div style={{ marginTop: 8, marginLeft: 22, padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 10 }}>
             <PainelSubatividades
               subatividades={subatividades}
               vencimentoMaximo={subtarefa.vencimento}
