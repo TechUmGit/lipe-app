@@ -1,16 +1,22 @@
-import { LayoutGrid, List, Plus } from 'lucide-react'
+import { ArrowDownWideNarrow, LayoutGrid, List, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { ProjetoModal } from '../components/ProjetoModal'
-import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM } from '../lib/calculo'
+import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, valoresDoAno } from '../lib/calculo'
 import { atualizarProjeto, criarProjeto, getProjetos, removerProjeto } from '../lib/projetosApi'
 import type { NovoProjeto, Projeto } from '../lib/types'
+
+const ANO_ATUAL = new Date().getFullYear()
 
 function normalizar(s: string) {
   return s
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+}
+
+function formatarMoeda(v: number) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 export function ProjetosListaPage() {
@@ -20,6 +26,7 @@ export function ProjetosListaPage() {
   const [editando, setEditando] = useState<Projeto | 'novo' | null>(null)
   const [busca, setBusca] = useState('')
   const [visao, setVisao] = useState<'cards' | 'lista'>('cards')
+  const [ordenarPorReceita, setOrdenarPorReceita] = useState(false)
 
   useEffect(() => {
     carregar()
@@ -54,6 +61,14 @@ export function ProjetosListaPage() {
     return projetos.filter((p) => normalizar(p.nome).includes(termo))
   }, [projetos, busca])
 
+  const receitaAnualPorId = useMemo(() => {
+    const mapa = new Map<string, number>()
+    for (const p of projetos) {
+      mapa.set(p.id, valoresDoAno(p, ANO_ATUAL).reduce((s, v) => s + v, 0))
+    }
+    return mapa
+  }, [projetos])
+
   return (
     <div className="stack">
       <div className="row-between">
@@ -77,6 +92,16 @@ export function ProjetosListaPage() {
           >
             <List size={16} strokeWidth={1.5} />
           </button>
+          <button
+            type="button"
+            className={`btn ${ordenarPorReceita ? 'btn-primary' : 'btn-ghost'}`}
+            style={{ padding: '6px 10px' }}
+            onClick={() => setOrdenarPorReceita((v) => !v)}
+            aria-label="Ordenar por maior receita"
+            title="Ordenar por maior receita"
+          >
+            <ArrowDownWideNarrow size={16} strokeWidth={1.5} />
+          </button>
           <button type="button" className="btn btn-primary" onClick={() => setEditando('novo')}>
             <Plus size={16} strokeWidth={1.5} /> Novo
           </button>
@@ -92,41 +117,58 @@ export function ProjetosListaPage() {
           {STATUS_PROJETO_ORDEM.map((status) => {
             const doGrupo = projetosFiltrados.filter((p) => p.status === status)
             if (doGrupo.length === 0) return null
+            const doGrupoOrdenado = ordenarPorReceita
+              ? [...doGrupo].sort((a, b) => (receitaAnualPorId.get(b.id) ?? 0) - (receitaAnualPorId.get(a.id) ?? 0))
+              : doGrupo
             return (
               <section key={status} className="stack" style={{ gap: 6 }}>
                 <h3>{STATUS_PROJETO_LABEL[status]}</h3>
                 {visao === 'cards' ? (
                   <div className="projetos-grid">
-                    {doGrupo.map((p) => (
-                      <div
-                        key={p.id}
-                        className="card"
-                        style={{ padding: '10px 14px', cursor: 'pointer', opacity: status === 'cancelado' ? 0.6 : 1 }}
-                        onClick={() => setEditando(p)}
-                      >
-                        <p style={{ fontWeight: 600 }}>{p.nome}</p>
-                        <p className="text-dim text-sm">{p.recorrente ? 'Recorrente' : 'Pagamento único'}</p>
-                      </div>
-                    ))}
+                    {doGrupoOrdenado.map((p) => {
+                      const anual = receitaAnualPorId.get(p.id) ?? 0
+                      return (
+                        <div
+                          key={p.id}
+                          className="card"
+                          style={{ padding: '10px 14px', cursor: 'pointer', opacity: status === 'cancelado' ? 0.6 : 1 }}
+                          onClick={() => setEditando(p)}
+                        >
+                          <p style={{ fontWeight: 600 }}>{p.nome}</p>
+                          <p className="text-dim text-sm">{p.recorrente ? 'Recorrente' : 'Pagamento único'}</p>
+                          <p className="text-dim text-sm">
+                            {formatarMoeda(anual)}/ano · {formatarMoeda(anual / 12)}/mês
+                          </p>
+                        </div>
+                      )
+                    })}
                   </div>
                 ) : (
                   <div className="card" style={{ padding: 0 }}>
-                    {doGrupo.map((p, i) => (
-                      <div
-                        key={p.id}
-                        className="row-between"
-                        style={{
-                          padding: '10px 14px',
-                          cursor: 'pointer',
-                          opacity: status === 'cancelado' ? 0.6 : 1,
-                          borderBottom: i < doGrupo.length - 1 ? '1px solid var(--border)' : undefined,
-                        }}
-                        onClick={() => setEditando(p)}
-                      >
-                        <span style={{ fontWeight: 600 }}>{p.nome}</span>
-                        <span className="text-dim text-sm">{p.recorrente ? 'Recorrente' : 'Pagamento único'}</span>
-                      </div>
-                    ))}
+                    {doGrupoOrdenado.map((p, i) => {
+                      const anual = receitaAnualPorId.get(p.id) ?? 0
+                      return (
+                        <div
+                          key={p.id}
+                          className="row-between"
+                          style={{
+                            padding: '10px 14px',
+                            cursor: 'pointer',
+                            opacity: status === 'cancelado' ? 0.6 : 1,
+                            borderBottom: i < doGrupoOrdenado.length - 1 ? '1px solid var(--border)' : undefined,
+                          }}
+                          onClick={() => setEditando(p)}
+                        >
+                          <span style={{ fontWeight: 600 }}>{p.nome}</span>
+                          <div className="text-dim text-sm" style={{ textAlign: 'right' }}>
+                            <div>{p.recorrente ? 'Recorrente' : 'Pagamento único'}</div>
+                            <div>
+                              {formatarMoeda(anual)}/ano · {formatarMoeda(anual / 12)}/mês
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </section>
