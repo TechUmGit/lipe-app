@@ -252,6 +252,10 @@ export async function removerBoleto(uid: string, id: string) {
   await deleteDoc(doc(boletosCol(uid), id))
 }
 
+export async function atualizarBoleto(uid: string, id: string, dados: Partial<Boleto>) {
+  await updateDoc(doc(boletosCol(uid), id), dados)
+}
+
 export async function getBoletosPagos(uid: string, ano: number, mes: number): Promise<Set<string>> {
   const q = query(boletosStatusCol(uid), where('ano', '==', ano), where('mes', '==', mes))
   const snap = await getDocs(q)

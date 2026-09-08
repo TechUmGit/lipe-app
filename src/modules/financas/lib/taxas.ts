@@ -1,4 +1,4 @@
-import type { Categoria, Lancamento, OrcamentoMensal, TaxaResponsabilidade } from './types'
+import type { Boleto, Categoria, Lancamento, OrcamentoMensal, TaxaResponsabilidade, VencimentoBoleto } from './types'
 
 export function taxaVigente(categoria: Pick<Categoria, 'taxas'>, dataMs: number = Date.now()): number {
   const taxas = categoria.taxas ?? []
@@ -35,6 +35,23 @@ export function orcamentoVigente(
 
 export function ordenarOrcamentos(orcamentos: OrcamentoMensal[]): OrcamentoMensal[] {
   return [...orcamentos].sort((a, b) => b.vigenciaDesde - a.vigenciaDesde)
+}
+
+export function vencimentoVigente(boleto: Pick<Boleto, 'vencimentos'>, dataMs: number = Date.now()): number | undefined {
+  const vencimentos = boleto.vencimentos ?? []
+  if (vencimentos.length === 0) return undefined
+
+  const ordenados = [...vencimentos].sort((a, b) => a.vigenciaDesde - b.vigenciaDesde)
+  let vigente: VencimentoBoleto | undefined
+  for (const v of ordenados) {
+    if (v.vigenciaDesde <= dataMs) vigente = v
+    else break
+  }
+  return vigente ? vigente.dia : ordenados[0].dia
+}
+
+export function ordenarVencimentos(vencimentos: VencimentoBoleto[]): VencimentoBoleto[] {
+  return [...vencimentos].sort((a, b) => b.vigenciaDesde - a.vigenciaDesde)
 }
 
 /** Valor do lançamento já ajustado pela taxa de responsabilidade vigente na data dele. */

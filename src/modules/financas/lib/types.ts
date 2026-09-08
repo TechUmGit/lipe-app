@@ -92,10 +92,16 @@ export interface ConexaoBancaria {
   precisaSync?: boolean
 }
 
+export interface VencimentoBoleto {
+  dia: number
+  vigenciaDesde: number
+}
+
 export interface Boleto {
   id: string
   nome: string
   ordem: number
+  vencimentos?: VencimentoBoleto[]
 }
 
 export interface SyncLog {

@@ -1,8 +1,10 @@
-import { Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { MonthSwitcher } from '../components/MonthSwitcher'
+import { VencimentoBoletoModal } from '../components/VencimentoBoletoModal'
 import {
+  atualizarBoleto,
   criarBoleto,
   definirBoletoPago,
   garantirSeedBoletos,
@@ -10,8 +12,9 @@ import {
   getBoletosPagos,
   removerBoleto,
 } from '../lib/financasApi'
+import { vencimentoVigente } from '../lib/taxas'
 import { useMesAno } from '../lib/useMesAno'
-import type { Boleto } from '../lib/types'
+import type { Boleto, VencimentoBoleto } from '../lib/types'
 
 export function BoletosPage() {
   const { user } = useAuth()
@@ -20,6 +23,7 @@ export function BoletosPage() {
   const [pagos, setPagos] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [novoNome, setNovoNome] = useState('')
+  const [editandoVencimento, setEditandoVencimento] = useState<Boleto | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -61,6 +65,13 @@ export function BoletosPage() {
     setBoletos((prev) => prev.filter((b) => b.id !== id))
   }
 
+  async function salvarVencimento(vencimentos: VencimentoBoleto[]) {
+    if (!user || !editandoVencimento) return
+    await atualizarBoleto(user.uid, editandoVencimento.id, { vencimentos })
+    setBoletos((prev) => prev.map((b) => (b.id === editandoVencimento.id ? { ...b, vencimentos } : b)))
+  }
+
+  const referenciaMes = new Date(ano, mes - 1, 1).getTime()
   const total = boletos.length
   const pagosCount = boletos.filter((b) => pagos.has(b.id)).length
 
@@ -84,6 +95,7 @@ export function BoletosPage() {
           <div className="stack" style={{ gap: 8 }}>
             {boletos.map((b) => {
               const pago = pagos.has(b.id)
+              const dia = vencimentoVigente(b, referenciaMes)
               return (
                 <div key={b.id} className="row-between card" style={{ padding: '12px 14px' }}>
                   <label
@@ -98,8 +110,18 @@ export function BoletosPage() {
                     />
                     <span style={{ textDecoration: pago ? 'line-through' : undefined, opacity: pago ? 0.6 : 1 }}>
                       {b.nome}
+                      {dia && <span className="text-dim text-sm"> · vence dia {dia}</span>}
                     </span>
                   </label>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ padding: '4px 8px' }}
+                    onClick={() => setEditandoVencimento(b)}
+                    aria-label={`Editar vencimento de ${b.nome}`}
+                  >
+                    <Pencil size={16} strokeWidth={1.5} />
+                  </button>
                   <button
                     type="button"
                     className="btn btn-ghost"
@@ -131,6 +153,14 @@ export function BoletosPage() {
             </button>
           </div>
         </>
+      )}
+
+      {editandoVencimento && (
+        <VencimentoBoletoModal
+          boleto={editandoVencimento}
+          onClose={() => setEditandoVencimento(null)}
+          onSave={salvarVencimento}
+        />
       )}
     </div>
   )
