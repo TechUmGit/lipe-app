@@ -40,6 +40,25 @@ export function valoresDoAno(p: Projeto, ano: number): number[] {
   return new Array(12).fill(0).map((_, i) => valorNoMes(p, i + 1, ano))
 }
 
+export function geraReceitaNoAno(p: Projeto, ano: number): boolean {
+  return valoresDoAno(p, ano).some((v) => v !== 0)
+}
+
+export type FiltroReceita = 'todos' | 'com_receita' | 'sem_receita'
+
+export const FILTROS_RECEITA: { id: FiltroReceita; label: string }[] = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'com_receita', label: 'Geram receita' },
+  { id: 'sem_receita', label: 'Não geram' },
+]
+
+export function normalizar(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
 export function subtarefaVencida(s: Pick<Subtarefa, 'concluida' | 'vencimento'>): boolean {
   if (s.concluida || !s.vencimento) return false
   const hoje = new Date()

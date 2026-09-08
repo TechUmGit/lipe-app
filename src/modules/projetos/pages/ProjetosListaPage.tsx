@@ -1,19 +1,13 @@
 import { ArrowDownWideNarrow, LayoutGrid, List, Plus } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { ProjetoModal } from '../components/ProjetoModal'
-import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, valoresDoAno } from '../lib/calculo'
-import { atualizarProjeto, criarProjeto, getProjetos, removerProjeto } from '../lib/projetosApi'
+import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, geraReceitaNoAno, normalizar, valoresDoAno } from '../lib/calculo'
+import { useProjetosContexto } from '../lib/ProjetosContext'
+import { atualizarProjeto, criarProjeto, removerProjeto } from '../lib/projetosApi'
 import type { NovoProjeto, Projeto } from '../lib/types'
 
 const ANO_ATUAL = new Date().getFullYear()
-
-function normalizar(s: string) {
-  return s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-}
 
 function formatarMoeda(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -21,23 +15,10 @@ function formatarMoeda(v: number) {
 
 export function ProjetosListaPage() {
   const { user } = useAuth()
-  const [loading, setLoading] = useState(true)
-  const [projetos, setProjetos] = useState<Projeto[]>([])
+  const { projetos, loading, busca, filtroReceita, recarregar } = useProjetosContexto()
   const [editando, setEditando] = useState<Projeto | 'novo' | null>(null)
-  const [busca, setBusca] = useState('')
   const [visao, setVisao] = useState<'cards' | 'lista'>('cards')
   const [ordenarPorReceita, setOrdenarPorReceita] = useState(false)
-
-  useEffect(() => {
-    carregar()
-  }, [user])
-
-  async function carregar() {
-    if (!user) return
-    const p = await getProjetos(user.uid)
-    setProjetos(p)
-    setLoading(false)
-  }
 
   async function salvar(dados: NovoProjeto) {
     if (!user) return
@@ -46,20 +27,27 @@ export function ProjetosListaPage() {
     } else {
       await criarProjeto(user.uid, dados)
     }
-    await carregar()
+    await recarregar()
   }
 
   async function excluir(id: string) {
     if (!user) return
-    setProjetos((prev) => prev.filter((p) => p.id !== id))
     await removerProjeto(user.uid, id)
+    await recarregar()
   }
 
   const projetosFiltrados = useMemo(() => {
     const termo = normalizar(busca.trim())
-    if (!termo) return projetos
-    return projetos.filter((p) => normalizar(p.nome).includes(termo))
-  }, [projetos, busca])
+    return projetos.filter((p) => {
+      if (termo && !normalizar(p.nome).includes(termo)) return false
+      if (filtroReceita !== 'todos') {
+        const geraReceita = geraReceitaNoAno(p, ANO_ATUAL)
+        if (filtroReceita === 'com_receita' && !geraReceita) return false
+        if (filtroReceita === 'sem_receita' && geraReceita) return false
+      }
+      return true
+    })
+  }, [projetos, busca, filtroReceita])
 
   const receitaAnualPorId = useMemo(() => {
     const mapa = new Map<string, number>()
@@ -107,8 +95,6 @@ export function ProjetosListaPage() {
           </button>
         </div>
       </div>
-
-      <input placeholder="Buscar projeto..." value={busca} onChange={(e) => setBusca(e.target.value)} />
 
       {loading ? (
         <p className="text-dim">Carregando...</p>
@@ -181,7 +167,7 @@ export function ProjetosListaPage() {
 
           {projetos.length === 0 && <p className="text-dim text-center">Nenhum projeto lançado ainda.</p>}
           {projetos.length > 0 && projetosFiltrados.length === 0 && (
-            <p className="text-dim text-center">Nenhum projeto encontrado para "{busca.trim()}".</p>
+            <p className="text-dim text-center">Nenhum projeto encontrado.</p>
           )}
         </>
       )}

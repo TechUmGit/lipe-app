@@ -1,20 +1,13 @@
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { ProjetoModal } from '../components/ProjetoModal'
-import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, valorNoMes, valoresDoAno } from '../lib/calculo'
-import { atualizarProjeto, getProjetos, removerProjeto } from '../lib/projetosApi'
+import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, normalizar, valorNoMes, valoresDoAno } from '../lib/calculo'
+import { useProjetosContexto } from '../lib/ProjetosContext'
+import { atualizarProjeto, removerProjeto } from '../lib/projetosApi'
 import type { NovoProjeto, Projeto } from '../lib/types'
 
 const MESES_CURTO = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-
-type FiltroReceita = 'todos' | 'com_receita' | 'sem_receita'
-
-const FILTROS_RECEITA: { id: FiltroReceita; label: string }[] = [
-  { id: 'todos', label: 'Todos' },
-  { id: 'com_receita', label: 'Geram receita' },
-  { id: 'sem_receita', label: 'Não geram' },
-]
 
 function formatarMoeda(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -22,34 +15,21 @@ function formatarMoeda(v: number) {
 
 export function ProjecoesPage() {
   const { user } = useAuth()
-  const [loading, setLoading] = useState(true)
-  const [projetos, setProjetos] = useState<Projeto[]>([])
+  const { projetos, loading, busca, filtroReceita, recarregar } = useProjetosContexto()
   const [ano, setAno] = useState(new Date().getFullYear())
   const [gruposColapsados, setGruposColapsados] = useState<Set<Projeto['status']>>(new Set())
-  const [filtroReceita, setFiltroReceita] = useState<FiltroReceita>('todos')
   const [editando, setEditando] = useState<Projeto | null>(null)
-
-  useEffect(() => {
-    carregar()
-  }, [user])
-
-  async function carregar() {
-    if (!user) return
-    const p = await getProjetos(user.uid)
-    setProjetos(p)
-    setLoading(false)
-  }
 
   async function salvar(dados: NovoProjeto) {
     if (!user || !editando) return
     await atualizarProjeto(user.uid, editando.id, dados)
-    await carregar()
+    await recarregar()
   }
 
   async function excluir(id: string) {
     if (!user) return
-    setProjetos((prev) => prev.filter((p) => p.id !== id))
     await removerProjeto(user.uid, id)
+    await recarregar()
   }
 
   function alternarGrupoColapsado(status: Projeto['status']) {
@@ -61,7 +41,14 @@ export function ProjecoesPage() {
     })
   }
 
-  const ativos = useMemo(() => projetos.filter((p) => p.status !== 'cancelado'), [projetos])
+  const ativos = useMemo(() => {
+    const termo = normalizar(busca.trim())
+    return projetos.filter((p) => {
+      if (p.status === 'cancelado') return false
+      if (termo && !normalizar(p.nome).includes(termo)) return false
+      return true
+    })
+  }, [projetos, busca])
 
   const tabela = useMemo(() => {
     const todasLinhas = ativos.map((p) => ({ projeto: p, meses: valoresDoAno(p, ano) }))
@@ -109,19 +96,6 @@ export function ProjecoesPage() {
             <ChevronRight size={18} strokeWidth={1.5} />
           </button>
         </div>
-      </div>
-
-      <div className="chip-grid">
-        {FILTROS_RECEITA.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            className={`chip ${filtroReceita === f.id ? 'active' : ''}`}
-            onClick={() => setFiltroReceita(f.id)}
-          >
-            {f.label}
-          </button>
-        ))}
       </div>
 
       <div className="dre-table-wrap">

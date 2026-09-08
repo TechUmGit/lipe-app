@@ -1,5 +1,5 @@
 import { ChevronRight, Kanban, List, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { useIsDesktop } from '../../../shared/hooks/useIsDesktop'
 import { EditarAtividadeModal, type DadosEdicaoAtividade } from '../components/EditarAtividadeModal'
@@ -10,10 +10,15 @@ import {
   colunaKanban,
   comConclusaoAutomatica,
   compararAtividades,
+  geraReceitaNoAno,
+  normalizar,
   subtarefaVencida,
 } from '../lib/calculo'
-import { getProjetos, atualizarProjeto } from '../lib/projetosApi'
+import { useProjetosContexto } from '../lib/ProjetosContext'
+import { atualizarProjeto } from '../lib/projetosApi'
 import type { Projeto, Subatividade, Subtarefa } from '../lib/types'
+
+const ANO_ATUAL = new Date().getFullYear()
 
 const COR_COLUNA: Record<ColunaKanban, string> = {
   vencido: 'var(--danger)',
@@ -171,8 +176,7 @@ function PainelSubatividades({
 export function AtividadesPage() {
   const { user } = useAuth()
   const isDesktop = useIsDesktop()
-  const [loading, setLoading] = useState(true)
-  const [projetos, setProjetos] = useState<Projeto[]>([])
+  const { projetos, setProjetos, loading, busca, filtroReceita } = useProjetosContexto()
   const [visao, setVisao] = useState<'lista' | 'kanban'>('lista')
   const [gruposColapsados, setGruposColapsados] = useState<Set<ColunaKanban>>(new Set())
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
@@ -184,19 +188,24 @@ export function AtividadesPage() {
   const [editando, setEditando] = useState<{ projeto: Projeto; subtarefa: Subtarefa } | null>(null)
   const [editandoSub, setEditandoSub] = useState<{ projeto: Projeto; subtarefa: Subtarefa; subatividade: Subatividade } | null>(null)
 
-  useEffect(() => {
-    if (!user) return
-    getProjetos(user.uid).then((p) => {
-      setProjetos(p)
-      setLoading(false)
-    })
-  }, [user])
-
   const ativos = useMemo(() => projetos.filter((p) => p.status !== 'cancelado'), [projetos])
+
+  const ativosFiltrados = useMemo(() => {
+    const termo = normalizar(busca.trim())
+    return ativos.filter((p) => {
+      if (termo && !normalizar(p.nome).includes(termo)) return false
+      if (filtroReceita !== 'todos') {
+        const geraReceita = geraReceitaNoAno(p, ANO_ATUAL)
+        if (filtroReceita === 'com_receita' && !geraReceita) return false
+        if (filtroReceita === 'sem_receita' && geraReceita) return false
+      }
+      return true
+    })
+  }, [ativos, busca, filtroReceita])
 
   const itens = useMemo(() => {
     const lista: ItemAtividade[] = []
-    for (const projeto of ativos) {
+    for (const projeto of ativosFiltrados) {
       for (const subtarefa of projeto.subtarefas) {
         const subatividades = subtarefa.subatividades ?? []
         if (subatividades.length === 0) {
@@ -209,7 +218,7 @@ export function AtividadesPage() {
       }
     }
     return lista.sort((a, b) => compararAtividades(registroDoItem(a), registroDoItem(b)))
-  }, [ativos])
+  }, [ativosFiltrados])
 
   const kanban = useMemo(
     () =>
