@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { MonthSwitcher } from '../components/MonthSwitcher'
+import { Moeda } from '../components/Moeda'
 import { getCategorias, getLancamentos } from '../lib/financasApi'
 import { valorResponsavel } from '../lib/taxas'
 import { useMesAno } from '../lib/useMesAno'
 import { GRUPOS_CATEGORIA, type Categoria, type Lancamento } from '../lib/types'
-
-function formatarMoeda(v: number) {
-  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
 
 export function DREPage() {
   const { user } = useAuth()
@@ -66,13 +63,17 @@ export function DREPage() {
               <div key={g.id} className="stack">
                 <div className="row-between">
                   <h3>{g.label}</h3>
-                  <span style={{ fontWeight: 600 }}>{formatarMoeda(g.subtotal)}</span>
+                  <span style={{ fontWeight: 600 }}>
+                    <Moeda valor={g.subtotal} />
+                  </span>
                 </div>
                 <div className="card stack" style={{ gap: 6 }}>
                   {g.linhas.map(({ categoria, total }) => (
                     <div key={categoria.id} className="row-between text-sm">
                       <span>{categoria.nome}</span>
-                      <span className="text-dim">{formatarMoeda(total)}</span>
+                      <span className="text-dim">
+                        <Moeda valor={total} />
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -83,11 +84,15 @@ export function DREPage() {
           <div className="card stack">
             <div className="row-between text-sm">
               <span className="text-dim">Receita</span>
-              <span style={{ color: 'var(--success)' }}>{formatarMoeda(dre.receita)}</span>
+              <span style={{ color: 'var(--success)' }}>
+                <Moeda valor={dre.receita} />
+              </span>
             </div>
             <div className="row-between text-sm">
               <span className="text-dim">Despesas totais</span>
-              <span>{formatarMoeda(dre.totalDespesas)}</span>
+              <span>
+                <Moeda valor={dre.totalDespesas} />
+              </span>
             </div>
             <div className="row-between">
               <span>Resultado</span>
@@ -97,7 +102,7 @@ export function DREPage() {
                   color: dre.resultado >= 0 ? 'var(--success)' : 'var(--danger)',
                 }}
               >
-                {formatarMoeda(dre.resultado)}
+                <Moeda valor={dre.resultado} />
               </span>
             </div>
           </div>

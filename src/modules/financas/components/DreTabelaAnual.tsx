@@ -6,13 +6,11 @@ import { useFinancasRefresh } from '../lib/FinancasRefreshContext'
 import { orcamentoVigente, valorResponsavel } from '../lib/taxas'
 import { GRUPOS_CATEGORIA, type Categoria, type DreAnotacao, type DreCor, type Lancamento } from '../lib/types'
 import { DreCelulaModal } from './DreCelulaModal'
+import { Moeda } from './Moeda'
 
 const MESES_CURTO = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 const CATEGORIAS_VIAGEM = new Set(['24. Viagens Fillipe', '25. Viagens Família'])
-
-function formatarMoeda(v: number) {
-  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
-}
+const OPCOES_SEM_CENTAVOS = { maximumFractionDigits: 0 }
 
 function chaveAnotacao(categoriaId: string, mes: number) {
   return `${categoriaId}_${mes}`
@@ -173,17 +171,27 @@ export function DreTabelaAnual() {
                     <Fragment key={g.id}>
                       <tr className="dre-table-grupo">
                         <td>{g.label}</td>
-                        <td>{formatarMoeda(g.orcamentoSubtotal)}</td>
-                        <td>{formatarMoeda(g.mediaMensalSubtotal)}</td>
+                        <td>
+                          <Moeda valor={g.orcamentoSubtotal} opcoes={OPCOES_SEM_CENTAVOS} />
+                        </td>
+                        <td>
+                          <Moeda valor={g.mediaMensalSubtotal} opcoes={OPCOES_SEM_CENTAVOS} />
+                        </td>
                         {g.mesesSubtotal.map((v, i) => (
-                          <td key={i}>{formatarMoeda(v)}</td>
+                          <td key={i}>
+                            <Moeda valor={v} opcoes={OPCOES_SEM_CENTAVOS} />
+                          </td>
                         ))}
                       </tr>
                       {g.linhas.map((l) => (
                         <tr key={l.categoria.id}>
                           <td>{l.categoria.nome}</td>
-                          <td>{formatarMoeda(l.orcamentoMensal)}</td>
-                          <td>{formatarMoeda(l.mediaMensal)}</td>
+                          <td>
+                            <Moeda valor={l.orcamentoMensal} opcoes={OPCOES_SEM_CENTAVOS} />
+                          </td>
+                          <td>
+                            <Moeda valor={l.mediaMensal} opcoes={OPCOES_SEM_CENTAVOS} />
+                          </td>
                           {l.meses.map((v, i) => {
                             const mes = i + 1
                             const anot = anotacoesPorChave.get(chaveAnotacao(l.categoria.id, mes))
@@ -207,7 +215,7 @@ export function DreTabelaAnual() {
                                   })
                                 }
                               >
-                                {v !== 0 ? formatarMoeda(v) : '—'}
+                                {v !== 0 ? <Moeda valor={v} opcoes={OPCOES_SEM_CENTAVOS} /> : '—'}
                               </td>
                             )
                           })}
@@ -221,7 +229,9 @@ export function DreTabelaAnual() {
                 <td />
                 <td />
                 {resultadoPorMes.map((v, i) => (
-                  <td key={i}>{formatarMoeda(v)}</td>
+                  <td key={i}>
+                    <Moeda valor={v} opcoes={OPCOES_SEM_CENTAVOS} />
+                  </td>
                 ))}
               </tr>
             </tbody>
@@ -239,15 +249,21 @@ export function DreTabelaAnual() {
         <div className="card stack" style={{ gap: 8 }}>
           <div className="row-between text-sm">
             <span className="text-dim">Orçamento completo de despesas</span>
-            <span style={{ fontWeight: 600 }}>{formatarMoeda(orcamentoCompleto)}</span>
+            <span style={{ fontWeight: 600 }}>
+              <Moeda valor={orcamentoCompleto} opcoes={OPCOES_SEM_CENTAVOS} />
+            </span>
           </div>
           <div className="row-between text-sm">
             <span className="text-dim">Despesas médias atuais</span>
-            <span style={{ fontWeight: 600 }}>{formatarMoeda(mediaAtual)}</span>
+            <span style={{ fontWeight: 600 }}>
+              <Moeda valor={mediaAtual} opcoes={OPCOES_SEM_CENTAVOS} />
+            </span>
           </div>
           <div className="row-between text-sm">
             <span className="text-dim">Despesas médias atuais (sem Viagens Fillipe/Família)</span>
-            <span style={{ fontWeight: 600 }}>{formatarMoeda(mediaAtualSemViagens)}</span>
+            <span style={{ fontWeight: 600 }}>
+              <Moeda valor={mediaAtualSemViagens} opcoes={OPCOES_SEM_CENTAVOS} />
+            </span>
           </div>
         </div>
       </div>

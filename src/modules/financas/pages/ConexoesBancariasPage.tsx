@@ -1,8 +1,9 @@
-import { AlertTriangle, CheckCircle2, ClipboardList, Link2, Loader2, RefreshCw } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ClipboardList, Eye, EyeOff, Link2, Loader2, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../core/AuthContext'
 import { Topbar } from '../../../shared/components/Topbar'
+import { Moeda } from '../components/Moeda'
 import { getContas, salvarContas } from '../lib/financasApi'
 import {
   confirmarItem,
@@ -12,11 +13,8 @@ import {
   sincronizar,
 } from '../lib/pluggyApi'
 import { abrirPluggyConnect } from '../lib/pluggyWidget'
+import { useFinancasPrivacidade } from '../lib/privacidade'
 import type { ConexaoBancaria, SyncLog } from '../lib/types'
-
-function formatarMoeda(v: number) {
-  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
 
 const STATUS_LABEL: Record<ConexaoBancaria['status'], { texto: string; cor: string }> = {
   conectado: { texto: 'Conectado', cor: 'var(--success)' },
@@ -27,6 +25,7 @@ const STATUS_LABEL: Record<ConexaoBancaria['status'], { texto: string; cor: stri
 
 export function ConexoesBancariasPage() {
   const { user } = useAuth()
+  const { oculto, alternar } = useFinancasPrivacidade()
   const [loading, setLoading] = useState(true)
   const [conexoes, setConexoes] = useState<ConexaoBancaria[]>([])
   const [contasApp, setContasApp] = useState<string[]>([])
@@ -120,14 +119,26 @@ export function ConexoesBancariasPage() {
         title="Contas conectadas"
         backTo="/financas"
         action={
-          <Link
-            to="/financas/conciliacao"
-            className="btn btn-ghost"
-            style={{ padding: '6px 10px' }}
-            aria-label="Ver conciliação"
-          >
-            <ClipboardList size={18} strokeWidth={1.5} />
-          </Link>
+          <>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ padding: '6px 10px' }}
+              onClick={alternar}
+              aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'}
+              title={oculto ? 'Mostrar valores' : 'Ocultar valores'}
+            >
+              {oculto ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
+            </button>
+            <Link
+              to="/financas/conciliacao"
+              className="btn btn-ghost"
+              style={{ padding: '6px 10px' }}
+              aria-label="Ver conciliação"
+            >
+              <ClipboardList size={18} strokeWidth={1.5} />
+            </Link>
+          </>
         }
       />
       <div className="page">
@@ -186,7 +197,9 @@ export function ConexoesBancariasPage() {
                     {conexao.contas.map((c) => (
                       <div key={c.pluggyAccountId} className="row-between text-sm">
                         <span>{c.contaNome || '(sem nome definido)'}</span>
-                        <span className="text-dim">{formatarMoeda(c.saldo)}</span>
+                        <span className="text-dim">
+                          <Moeda valor={c.saldo} />
+                        </span>
                       </div>
                     ))}
                   </div>

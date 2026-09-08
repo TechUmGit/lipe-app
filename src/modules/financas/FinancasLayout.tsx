@@ -1,4 +1,4 @@
-import { Landmark, Tag, Upload } from 'lucide-react'
+import { Eye, EyeOff, Landmark, Tag, Upload } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Topbar } from '../../shared/components/Topbar'
@@ -6,12 +6,14 @@ import { useAuth } from '../../core/AuthContext'
 import { useIsDesktop } from '../../shared/hooks/useIsDesktop'
 import { garantirSeedInicial } from './lib/financasApi'
 import { MesAnoContext } from './lib/MesAnoContext'
+import { useFinancasPrivacidade } from './lib/privacidade'
 import { FinancasDashboardDesktop } from './pages/FinancasDashboardDesktop'
 
 export function FinancasLayout() {
   const { user } = useAuth()
   const seedIniciado = useRef(false)
   const isDesktop = useIsDesktop()
+  const { oculto, alternar } = useFinancasPrivacidade()
   const hoje = new Date()
   const [mes, setMes] = useState(hoje.getMonth() + 1)
   const [ano, setAno] = useState(hoje.getFullYear())
@@ -35,6 +37,16 @@ export function FinancasLayout() {
         backTo="/"
         action={
           <>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ padding: '6px 10px' }}
+              onClick={alternar}
+              aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'}
+              title={oculto ? 'Mostrar valores' : 'Ocultar valores'}
+            >
+              {oculto ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
+            </button>
             <Link
               to="/financas/importar"
               className="btn btn-ghost"

@@ -1,6 +1,8 @@
+import { Eye, EyeOff } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { Topbar } from '../../../shared/components/Topbar'
+import { Moeda } from '../components/Moeda'
 import { TaxaModal } from '../components/TaxaModal'
 import {
   atualizarCategoria,
@@ -10,11 +12,13 @@ import {
   removerCategoria,
   salvarContas,
 } from '../lib/financasApi'
+import { useFinancasPrivacidade } from '../lib/privacidade'
 import { orcamentoVigente, taxaVigente } from '../lib/taxas'
 import { GRUPOS_CATEGORIA, type Categoria, type GrupoCategoria, type OrcamentoMensal, type TaxaResponsabilidade } from '../lib/types'
 
 export function CategoriasPage() {
   const { user } = useAuth()
+  const { oculto, alternar } = useFinancasPrivacidade()
   const [loading, setLoading] = useState(true)
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [contas, setContas] = useState<string[]>([])
@@ -80,13 +84,24 @@ export function CategoriasPage() {
     setCategorias((prev) => prev.map((c) => (c.id === editandoTaxa.id ? { ...c, ...dados } : c)))
   }
 
-  function formatarMoeda(v: number) {
-    return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-  }
-
   return (
     <>
-      <Topbar title="Categorias" backTo="/financas" />
+      <Topbar
+        title="Categorias"
+        backTo="/financas"
+        action={
+          <button
+            type="button"
+            className="btn btn-ghost"
+            style={{ padding: '6px 10px' }}
+            onClick={alternar}
+            aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'}
+            title={oculto ? 'Mostrar valores' : 'Ocultar valores'}
+          >
+            {oculto ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
+          </button>
+        }
+      />
       <div className="page">
       {loading ? (
         <p className="text-dim">Carregando...</p>
@@ -140,7 +155,14 @@ export function CategoriasPage() {
                   <div className="row" style={{ gap: 10 }}>
                     <span className="text-dim text-sm">
                       {taxaVigente(c)}%
-                      {orcamentoVigente(c) ? ` · ${formatarMoeda(orcamentoVigente(c))}` : ''}
+                      {orcamentoVigente(c) ? (
+                        <>
+                          {' · '}
+                          <Moeda valor={orcamentoVigente(c)} />
+                        </>
+                      ) : (
+                        ''
+                      )}
                     </span>
                     <button
                       type="button"

@@ -2,11 +2,8 @@ import { useState } from 'react'
 import { Modal } from '../../../shared/components/Modal'
 import { valorResponsavel } from '../lib/taxas'
 import { MESES } from './MonthSwitcher'
+import { Moeda } from './Moeda'
 import type { Categoria, DreAnotacao, DreCor, Lancamento } from '../lib/types'
-
-function formatarMoeda(v: number) {
-  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
 
 export function DreCelulaModal({
   categoria,
@@ -41,7 +38,7 @@ export function DreCelulaModal({
       <div className="stack">
         <h3>{categoria.nome}</h3>
         <p className="text-dim text-sm">
-          {MESES[mes - 1]} {ano} · {formatarMoeda(valor)}
+          {MESES[mes - 1]} {ano} · <Moeda valor={valor} />
         </p>
       </div>
 
@@ -70,7 +67,7 @@ export function DreCelulaModal({
                       color: ajustado < 0 ? 'var(--text)' : 'var(--success)',
                     }}
                   >
-                    {formatarMoeda(ajustado)}
+                    <Moeda valor={ajustado} />
                   </span>
                 </div>
               )

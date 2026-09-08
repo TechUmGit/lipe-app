@@ -2,15 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { DonutChart } from '../components/DonutChart'
 import { MESES, MonthSwitcher } from '../components/MonthSwitcher'
+import { Moeda } from '../components/Moeda'
 import { getCategorias, getLancamentos } from '../lib/financasApi'
 import { useFinancasRefresh } from '../lib/FinancasRefreshContext'
 import { valorResponsavel } from '../lib/taxas'
 import { useMesAno } from '../lib/useMesAno'
 import type { Categoria, Lancamento } from '../lib/types'
-
-function formatarMoeda(v: number) {
-  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
 
 const CORES = {
   despesa_fixa: '#6d4de6',
@@ -90,7 +87,9 @@ export function ResumoPage() {
               center={
                 <>
                   <p className="text-dim text-sm">Gasto em {MESES[mes - 1]}</p>
-                  <p style={{ fontSize: 24, fontWeight: 700 }}>{formatarMoeda(resumo.despesaTotal)}</p>
+                  <p style={{ fontSize: 24, fontWeight: 700 }}>
+                    <Moeda valor={resumo.despesaTotal} />
+                  </p>
                 </>
               }
             />
@@ -102,7 +101,9 @@ export function ResumoPage() {
                     <span className="legend-dot" style={{ background: s.color }} />
                     <span className="text-sm">{s.label}</span>
                   </div>
-                  <span className="text-sm text-dim">{formatarMoeda(s.value)}</span>
+                  <span className="text-sm text-dim">
+                    <Moeda valor={s.value} />
+                  </span>
                 </div>
               ))}
             </div>
@@ -111,16 +112,20 @@ export function ResumoPage() {
           <div className="card stat-row">
             <div>
               <p className="text-dim text-sm">Receita</p>
-              <p style={{ color: 'var(--success)', fontWeight: 600 }}>{formatarMoeda(resumo.receita)}</p>
+              <p style={{ color: 'var(--success)', fontWeight: 600 }}>
+                <Moeda valor={resumo.receita} />
+              </p>
             </div>
             <div>
               <p className="text-dim text-sm">Despesa</p>
-              <p style={{ fontWeight: 600 }}>{formatarMoeda(resumo.despesaTotal)}</p>
+              <p style={{ fontWeight: 600 }}>
+                <Moeda valor={resumo.despesaTotal} />
+              </p>
             </div>
             <div>
               <p className="text-dim text-sm">Saldo</p>
               <p style={{ fontWeight: 600, color: resumo.saldo >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                {formatarMoeda(resumo.saldo)}
+                <Moeda valor={resumo.saldo} />
               </p>
             </div>
           </div>

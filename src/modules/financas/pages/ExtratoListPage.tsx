@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { LancamentoModal } from '../components/LancamentoModal'
 import { MESES } from '../components/MonthSwitcher'
+import { Moeda } from '../components/Moeda'
 import { agruparPorDia } from '../lib/dateGroups'
 import {
   atualizarLancamento,
@@ -20,10 +21,6 @@ import { useFinancasRefresh } from '../lib/FinancasRefreshContext'
 import { valorResponsavel } from '../lib/taxas'
 import type { Categoria, Lancamento } from '../lib/types'
 import type { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore'
-
-function formatarMoeda(v: number) {
-  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
 
 function normalizar(s: string) {
   return s
@@ -284,15 +281,21 @@ export function ExtratoListPage() {
         <div className="card stat-row">
           <div>
             <p className="text-dim text-sm">Receita</p>
-            <p style={{ color: 'var(--success)', fontWeight: 600 }}>{formatarMoeda(totais.receita)}</p>
+            <p style={{ color: 'var(--success)', fontWeight: 600 }}>
+              <Moeda valor={totais.receita} />
+            </p>
           </div>
           <div>
             <p className="text-dim text-sm">Despesa</p>
-            <p style={{ fontWeight: 600 }}>{formatarMoeda(totais.despesa)}</p>
+            <p style={{ fontWeight: 600 }}>
+              <Moeda valor={totais.despesa} />
+            </p>
           </div>
           <div>
             <p className="text-dim text-sm">Saldo</p>
-            <p style={{ fontWeight: 600 }}>{formatarMoeda(totais.saldo)}</p>
+            <p style={{ fontWeight: 600 }}>
+              <Moeda valor={totais.saldo} />
+            </p>
           </div>
         </div>
       )}
@@ -348,7 +351,7 @@ export function ExtratoListPage() {
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {formatarMoeda(l.valor)}
+                        <Moeda valor={l.valor} />
                       </span>
                     </div>
                   )
