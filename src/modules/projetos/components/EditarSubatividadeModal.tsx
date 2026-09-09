@@ -14,6 +14,7 @@ function deInputDate(valor: string) {
 export interface DadosEdicaoSubatividade {
   nome: string
   vencimento?: number
+  obs?: string
 }
 
 export function EditarSubatividadeModal({
@@ -29,6 +30,7 @@ export function EditarSubatividadeModal({
 }) {
   const [nome, setNome] = useState(subatividade.nome)
   const [vencimento, setVencimento] = useState(subatividade.vencimento ? paraInputDate(subatividade.vencimento) : '')
+  const [obs, setObs] = useState(subatividade.obs ?? '')
   const [erro, setErro] = useState('')
 
   const maxInput = vencimentoMaximo !== undefined ? paraInputDate(vencimentoMaximo - 24 * 60 * 60 * 1000) : undefined
@@ -45,6 +47,7 @@ export function EditarSubatividadeModal({
       }
       dados.vencimento = ms
     }
+    if (obs.trim()) dados.obs = obs.trim()
     onSave(dados)
     onClose()
   }
@@ -78,6 +81,11 @@ export function EditarSubatividadeModal({
         </p>
       )}
       {erro && <p className="error-text">{erro}</p>}
+
+      <label>
+        Observação
+        <textarea rows={3} value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Opcional" />
+      </label>
 
       <button type="button" className="btn btn-primary" onClick={salvar}>
         Salvar

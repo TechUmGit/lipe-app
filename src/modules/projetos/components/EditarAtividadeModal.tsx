@@ -42,6 +42,7 @@ export function EditarAtividadeModal({
   const [novasSubatividades, setNovasSubatividades] = useState<Subatividade[]>([])
   const [textoNovaSub, setTextoNovaSub] = useState('')
   const [dataNovaSub, setDataNovaSub] = useState('')
+  const [obsNovaSub, setObsNovaSub] = useState('')
   const [erroSub, setErroSub] = useState('')
 
   const vencimentoMs = vencimento ? deInputDate(vencimento) : undefined
@@ -59,9 +60,11 @@ export function EditarAtividadeModal({
       }
       nova.vencimento = ms
     }
+    if (obsNovaSub.trim()) nova.obs = obsNovaSub.trim()
     setNovasSubatividades((prev) => [...prev, nova])
     setTextoNovaSub('')
     setDataNovaSub('')
+    setObsNovaSub('')
     setErroSub('')
   }
 
@@ -171,6 +174,12 @@ export function EditarAtividadeModal({
             <Plus size={16} strokeWidth={1.5} />
           </button>
         </div>
+        <input
+          placeholder="Observação (opcional)..."
+          value={obsNovaSub}
+          onChange={(e) => setObsNovaSub(e.target.value)}
+          style={{ fontSize: 13 }}
+        />
         {erroSub && <p className="error-text">{erroSub}</p>}
       </div>
 

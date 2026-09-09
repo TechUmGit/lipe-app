@@ -10,6 +10,7 @@ export interface Subatividade {
   nome: string
   concluida: boolean
   vencimento?: number
+  obs?: string
 }
 
 export interface Subtarefa {
