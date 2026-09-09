@@ -10,6 +10,7 @@ import {
   colunaKanban,
   comConclusaoAutomatica,
   compararAtividades,
+  dataReferencia,
   geraReceitaNoAno,
   normalizar,
   subtarefaVencida,
@@ -44,6 +45,11 @@ function deInputDate(valor: string) {
 
 function paraInputDate(ms: number) {
   return new Date(ms).toISOString().slice(0, 10)
+}
+
+/** Pra organizar/colorir por urgência: usa a data de referência (subatividade pendente mais próxima) no lugar do vencimento bruto da atividade. */
+function comReferencia(subtarefa: Subtarefa) {
+  return { concluida: subtarefa.concluida, vencimento: dataReferencia(subtarefa) }
 }
 
 function PainelSubatividades({
@@ -211,14 +217,14 @@ export function AtividadesPage() {
         lista.push({ projeto, subtarefa })
       }
     }
-    return lista.sort((a, b) => compararAtividades(a.subtarefa, b.subtarefa))
+    return lista.sort((a, b) => compararAtividades(comReferencia(a.subtarefa), comReferencia(b.subtarefa)))
   }, [ativosFiltrados])
 
   const kanban = useMemo(
     () =>
       COLUNAS_KANBAN.map((coluna) => ({
         ...coluna,
-        itens: itens.filter((item) => colunaKanban(item.subtarefa) === coluna.id),
+        itens: itens.filter((item) => colunaKanban(comReferencia(item.subtarefa)) === coluna.id),
       })),
     [itens],
   )
@@ -342,7 +348,8 @@ export function AtividadesPage() {
 
   function renderCartao(item: ItemAtividade) {
     const { projeto, subtarefa } = item
-    const vencida = subtarefaVencida(subtarefa)
+    const referencia = dataReferencia(subtarefa)
+    const vencida = subtarefaVencida(comReferencia(subtarefa))
     const expandido = expandidos.has(subtarefa.id)
     const subatividades = subtarefa.subatividades ?? []
     const feitas = subatividades.filter((s) => s.concluida).length
@@ -386,7 +393,7 @@ export function AtividadesPage() {
                 {subtarefa.responsavel ? ` · ${subtarefa.responsavel}` : ''}
               </span>
               <span style={{ whiteSpace: 'nowrap', color: vencida ? 'var(--danger)' : undefined }}>
-                {subtarefa.vencimento ? formatarData(subtarefa.vencimento) : '—'}
+                {referencia ? formatarData(referencia) : '—'}
                 {subatividades.length > 0 ? ` · ${feitas}/${subatividades.length}` : ''}
               </span>
             </div>
@@ -535,7 +542,8 @@ export function AtividadesPage() {
                 <p className="text-dim text-sm">—</p>
               ) : (
                 coluna.itens.map(({ projeto, subtarefa }) => {
-                  const vencida = subtarefaVencida(subtarefa)
+                  const referencia = dataReferencia(subtarefa)
+                  const vencida = subtarefaVencida(comReferencia(subtarefa))
                   const subatividades = subtarefa.subatividades ?? []
                   const feitas = subatividades.filter((s) => s.concluida).length
                   return (
@@ -559,7 +567,7 @@ export function AtividadesPage() {
                         </p>
                         <p className="text-dim text-sm" style={{ color: vencida ? 'var(--danger)' : undefined }}>
                           {projeto.nome}
-                          {subtarefa.vencimento ? ` · ${formatarData(subtarefa.vencimento)}` : ''}
+                          {referencia ? ` · ${formatarData(referencia)}` : ''}
                           {subatividades.length > 0 ? ` · ${feitas}/${subatividades.length}` : ''}
                         </p>
                       </div>

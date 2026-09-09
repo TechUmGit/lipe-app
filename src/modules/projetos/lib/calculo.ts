@@ -73,8 +73,21 @@ export function comConclusaoAutomatica(s: Subtarefa): Subtarefa {
   return { ...s, concluida: subatividades.every((sub) => sub.concluida) }
 }
 
+/**
+ * Data usada pra organizar/colorir a urgência de uma atividade: a subatividade pendente com
+ * vencimento mais próximo, já que a data da atividade em si é sempre o prazo final (posterior
+ * às subatividades). Sem subatividades pendentes com data, cai pro vencimento da própria atividade.
+ */
+export function dataReferencia(s: Pick<Subtarefa, 'vencimento' | 'subatividades'>): number | undefined {
+  const datasPendentes = (s.subatividades ?? [])
+    .filter((sub) => !sub.concluida && sub.vencimento !== undefined)
+    .map((sub) => sub.vencimento as number)
+  if (datasPendentes.length > 0) return Math.min(...datasPendentes)
+  return s.vencimento
+}
+
 /** Pendentes antes de concluídas; dentro de cada grupo, vencimento mais próximo primeiro (sem data, por último). */
-export function compararAtividades(a: Subtarefa, b: Subtarefa): number {
+export function compararAtividades(a: Pick<Subtarefa, 'concluida' | 'vencimento'>, b: Pick<Subtarefa, 'concluida' | 'vencimento'>): number {
   const porStatus = Number(a.concluida) - Number(b.concluida)
   if (porStatus !== 0) return porStatus
   const va = a.vencimento ?? Infinity
