@@ -3,7 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../../core/AuthContext'
 import { Topbar } from '../../shared/components/Topbar'
 import { useIsDesktop } from '../../shared/hooks/useIsDesktop'
-import { FILTROS_RECEITA, type FiltroReceita } from './lib/calculo'
+import { FILTROS_RECEITA, STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, type FiltroReceita } from './lib/calculo'
 import { ProjetosContext } from './lib/ProjetosContext'
 import { getProjetos } from './lib/projetosApi'
 import type { Projeto } from './lib/types'
@@ -33,8 +33,14 @@ export function ProjetosLayout() {
     setLoading(false)
   }
 
-  const projetosOrdenados = useMemo(
-    () => [...projetos].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
+  const projetosPorStatus = useMemo(
+    () =>
+      STATUS_PROJETO_ORDEM.map((status) => ({
+        status,
+        projetos: projetos
+          .filter((p) => p.status === status)
+          .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
+      })).filter((grupo) => grupo.projetos.length > 0),
     [projetos],
   )
 
@@ -52,10 +58,14 @@ export function ProjetosLayout() {
             />
             <select value={busca} onChange={(e) => setBusca(e.target.value)} style={{ flex: 1 }} aria-label="Selecionar projeto">
               <option value="">Todos os projetos</option>
-              {projetosOrdenados.map((p) => (
-                <option key={p.id} value={p.nome}>
-                  {p.nome}
-                </option>
+              {projetosPorStatus.map((grupo) => (
+                <optgroup key={grupo.status} label={STATUS_PROJETO_LABEL[grupo.status]}>
+                  {grupo.projetos.map((p) => (
+                    <option key={p.id} value={p.nome}>
+                      {p.nome}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>
