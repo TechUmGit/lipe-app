@@ -17,7 +17,7 @@ export function ProjetosListaPage() {
   const { user } = useAuth()
   const { projetos, loading, busca, filtroReceita, recarregar } = useProjetosContexto()
   const [editando, setEditando] = useState<Projeto | 'novo' | null>(null)
-  const [visao, setVisao] = useState<'cards' | 'lista'>('cards')
+  const [visao, setVisao] = useState<'cards' | 'lista'>('lista')
   const [ordenarPorReceita, setOrdenarPorReceita] = useState(false)
 
   async function salvar(dados: NovoProjeto) {
@@ -38,15 +38,17 @@ export function ProjetosListaPage() {
 
   const projetosFiltrados = useMemo(() => {
     const termo = normalizar(busca.trim())
-    return projetos.filter((p) => {
-      if (termo && !normalizar(p.nome).includes(termo)) return false
-      if (filtroReceita !== 'todos') {
-        const geraReceita = geraReceitaNoAno(p, ANO_ATUAL)
-        if (filtroReceita === 'com_receita' && !geraReceita) return false
-        if (filtroReceita === 'sem_receita' && geraReceita) return false
-      }
-      return true
-    })
+    return projetos
+      .filter((p) => {
+        if (termo && !normalizar(p.nome).includes(termo)) return false
+        if (filtroReceita !== 'todos') {
+          const geraReceita = geraReceitaNoAno(p, ANO_ATUAL)
+          if (filtroReceita === 'com_receita' && !geraReceita) return false
+          if (filtroReceita === 'sem_receita' && geraReceita) return false
+        }
+        return true
+      })
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
   }, [projetos, busca, filtroReceita])
 
   const receitaAnualPorId = useMemo(() => {

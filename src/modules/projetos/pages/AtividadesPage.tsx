@@ -95,7 +95,7 @@ function PainelSubatividades({
 
   return (
     <div className="stack" style={{ gap: 6 }}>
-      {subatividades.map((sub) => {
+      {[...subatividades].reverse().map((sub) => {
         const vencida = !sub.concluida && !!sub.vencimento && sub.vencimento < Date.now()
         return (
           <div key={sub.id} className="row" style={{ gap: 8, alignItems: 'center' }}>

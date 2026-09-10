@@ -121,7 +121,7 @@ export function EditarAtividadeModal({
         <span className="text-dim text-sm">Adicionar subatividade</span>
         {novasSubatividades.length > 0 && (
           <div className="stack" style={{ gap: 6 }}>
-            {novasSubatividades.map((s) => (
+            {[...novasSubatividades].reverse().map((s) => (
               <div key={s.id} className="row-between card" style={{ padding: '8px 12px' }}>
                 <span className="text-sm">
                   {s.nome}
