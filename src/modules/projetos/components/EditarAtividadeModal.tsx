@@ -1,6 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Modal } from '../../../shared/components/Modal'
+import { compararAtividades } from '../lib/calculo'
 import type { Subatividade, Subtarefa } from '../lib/types'
 
 function paraInputDate(ms: number) {
@@ -121,7 +122,7 @@ export function EditarAtividadeModal({
         <span className="text-dim text-sm">Adicionar subatividade</span>
         {novasSubatividades.length > 0 && (
           <div className="stack" style={{ gap: 6 }}>
-            {[...novasSubatividades].reverse().map((s) => (
+            {[...novasSubatividades].sort(compararAtividades).map((s) => (
               <div key={s.id} className="row-between card" style={{ padding: '8px 12px' }}>
                 <span className="text-sm">
                   {s.nome}
