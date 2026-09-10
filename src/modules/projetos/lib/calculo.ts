@@ -44,6 +44,14 @@ export function geraReceitaNoAno(p: Projeto, ano: number): boolean {
   return valoresDoAno(p, ano).some((v) => v !== 0)
 }
 
+/** Gera receita agora ou em algum dos próximos anos (não só no ano corrente). */
+export function geraReceitaDaquiPraFrente(p: Projeto, anoInicial: number, anosAFrente = 5): boolean {
+  for (let i = 0; i <= anosAFrente; i++) {
+    if (geraReceitaNoAno(p, anoInicial + i)) return true
+  }
+  return false
+}
+
 export type FiltroReceita = 'todos' | 'com_receita' | 'sem_receita'
 
 export const FILTROS_RECEITA: { id: FiltroReceita; label: string }[] = [

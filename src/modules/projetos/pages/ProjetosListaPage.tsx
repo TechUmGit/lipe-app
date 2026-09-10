@@ -2,7 +2,7 @@ import { ArrowDownWideNarrow, LayoutGrid, List, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { ProjetoModal } from '../components/ProjetoModal'
-import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, geraReceitaNoAno, normalizar, valoresDoAno } from '../lib/calculo'
+import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, geraReceitaDaquiPraFrente, normalizar, valoresDoAno } from '../lib/calculo'
 import { useProjetosContexto } from '../lib/ProjetosContext'
 import { atualizarProjeto, criarProjeto, removerProjeto } from '../lib/projetosApi'
 import type { NovoProjeto, Projeto } from '../lib/types'
@@ -42,7 +42,7 @@ export function ProjetosListaPage() {
       .filter((p) => {
         if (termo && !normalizar(p.nome).includes(termo)) return false
         if (filtroReceita !== 'todos') {
-          const geraReceita = geraReceitaNoAno(p, ANO_ATUAL)
+          const geraReceita = geraReceitaDaquiPraFrente(p, ANO_ATUAL)
           if (filtroReceita === 'com_receita' && !geraReceita) return false
           if (filtroReceita === 'sem_receita' && geraReceita) return false
         }

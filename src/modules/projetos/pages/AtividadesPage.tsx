@@ -11,7 +11,7 @@ import {
   comConclusaoAutomatica,
   compararAtividades,
   dataReferencia,
-  geraReceitaNoAno,
+  geraReceitaDaquiPraFrente,
   normalizar,
   subtarefaVencida,
 } from '../lib/calculo'
@@ -202,7 +202,7 @@ export function AtividadesPage() {
     return ativos.filter((p) => {
       if (termo && !normalizar(p.nome).includes(termo)) return false
       if (filtroReceita !== 'todos') {
-        const geraReceita = geraReceitaNoAno(p, ANO_ATUAL)
+        const geraReceita = geraReceitaDaquiPraFrente(p, ANO_ATUAL)
         if (filtroReceita === 'com_receita' && !geraReceita) return false
         if (filtroReceita === 'sem_receita' && geraReceita) return false
       }
