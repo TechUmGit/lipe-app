@@ -59,6 +59,14 @@ export function ProjetosListaPage() {
     return mapa
   }, [projetos])
 
+  const resumoReceita = useMemo(() => {
+    const ativos = projetos.filter((p) => p.status !== 'cancelado')
+    return [ANO_ATUAL, ANO_ATUAL + 1, ANO_ATUAL + 2].map((ano) => ({
+      ano,
+      total: ativos.reduce((s, p) => s + valoresDoAno(p, ano).reduce((s2, v) => s2 + v, 0), 0),
+    }))
+  }, [projetos])
+
   return (
     <div className="stack">
       <div className="row-between">
@@ -102,6 +110,18 @@ export function ProjetosListaPage() {
         <p className="text-dim">Carregando...</p>
       ) : (
         <>
+          <div className="stack" style={{ gap: 6 }}>
+            <h3 style={{ margin: 0 }}>Resumo de faturamento</h3>
+            <div className="card" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              {resumoReceita.map((r) => (
+                <div key={r.ano} style={{ textAlign: 'center' }}>
+                  <p className="text-dim text-sm">{r.ano}</p>
+                  <p style={{ fontWeight: 600 }}>{formatarMoeda(r.total)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {STATUS_PROJETO_ORDEM.map((status) => {
             const doGrupo = projetosFiltrados.filter((p) => p.status === status)
             if (doGrupo.length === 0) return null
@@ -110,7 +130,9 @@ export function ProjetosListaPage() {
               : doGrupo
             return (
               <section key={status} className="stack" style={{ gap: 6 }}>
-                <h3>{STATUS_PROJETO_LABEL[status]}</h3>
+                <h3>
+                  {STATUS_PROJETO_LABEL[status]} ({doGrupo.length})
+                </h3>
                 {visao === 'cards' ? (
                   <div className="projetos-grid">
                     {doGrupoOrdenado.map((p) => {
