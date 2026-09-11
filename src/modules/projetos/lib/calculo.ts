@@ -94,6 +94,11 @@ export function dataReferencia(s: Pick<Subtarefa, 'vencimento' | 'subatividades'
   return s.vencimento
 }
 
+/** Pra organizar/colorir por urgência: usa a data de referência (subatividade pendente mais próxima) no lugar do vencimento bruto da atividade. */
+export function comReferencia(s: Subtarefa): Pick<Subtarefa, 'concluida' | 'vencimento'> {
+  return { concluida: s.concluida, vencimento: dataReferencia(s) }
+}
+
 /** Pendentes antes de concluídas; dentro de cada grupo, vencimento mais próximo primeiro (sem data, por último). */
 export function compararAtividades(a: Pick<Subtarefa, 'concluida' | 'vencimento'>, b: Pick<Subtarefa, 'concluida' | 'vencimento'>): number {
   const porStatus = Number(a.concluida) - Number(b.concluida)

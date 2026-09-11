@@ -319,6 +319,34 @@ label {
   margin: 0 auto 4px;
 }
 
+.modal-sheet.modal-sheet-wide {
+  max-width: 720px;
+}
+
+.modal-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-tabs button {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 8px 4px 10px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-dim);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+
+.modal-tabs button.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
 .lancamento-row {
   cursor: pointer;
   padding: 12px 0;

@@ -1,22 +1,23 @@
-import { ChevronRight, Kanban, List, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ChevronRight, Kanban, List, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useAuth } from '../../../core/AuthContext'
 import { useIsDesktop } from '../../../shared/hooks/useIsDesktop'
+import { CartaoAtividade } from '../components/CartaoAtividade'
 import { EditarAtividadeModal, type DadosEdicaoAtividade } from '../components/EditarAtividadeModal'
-import { EditarSubatividadeModal, type DadosEdicaoSubatividade } from '../components/EditarSubatividadeModal'
+import { EditarSubatividadeModal } from '../components/EditarSubatividadeModal'
 import {
   COLUNAS_KANBAN,
   type ColunaKanban,
   colunaKanban,
-  comConclusaoAutomatica,
+  comReferencia,
   compararAtividades,
   dataReferencia,
   geraReceitaDaquiPraFrente,
   normalizar,
   subtarefaVencida,
 } from '../lib/calculo'
+import { deInputDate, formatarData } from '../lib/datas'
+import { useAtividadesMutations } from '../lib/useAtividadesMutations'
 import { useProjetosContexto } from '../lib/ProjetosContext'
-import { atualizarProjeto } from '../lib/projetosApi'
 import type { Projeto, Subatividade, Subtarefa } from '../lib/types'
 
 const ANO_ATUAL = new Date().getFullYear()
@@ -34,157 +35,19 @@ interface ItemAtividade {
   subtarefa: Subtarefa
 }
 
-function formatarData(ms: number) {
-  return new Date(ms).toLocaleDateString('pt-BR')
-}
-
-function deInputDate(valor: string) {
-  const [ano, mes, dia] = valor.split('-').map(Number)
-  return new Date(ano, mes - 1, dia).getTime()
-}
-
-function paraInputDate(ms: number) {
-  return new Date(ms).toISOString().slice(0, 10)
-}
-
-/** Pra organizar/colorir por urgência: usa a data de referência (subatividade pendente mais próxima) no lugar do vencimento bruto da atividade. */
-function comReferencia(subtarefa: Subtarefa) {
-  return { concluida: subtarefa.concluida, vencimento: dataReferencia(subtarefa) }
-}
-
-function PainelSubatividades({
-  subatividades,
-  vencimentoMaximo,
-  onToggle,
-  onAdicionar,
-  onEditar,
-  onRemover,
-}: {
-  subatividades: Subatividade[]
-  vencimentoMaximo?: number
-  onToggle: (id: string) => void
-  onAdicionar: (nome: string, vencimento?: number, obs?: string) => void
-  onEditar: (subatividade: Subatividade) => void
-  onRemover: (id: string) => void
-}) {
-  const [texto, setTexto] = useState('')
-  const [data, setData] = useState('')
-  const [obsTexto, setObsTexto] = useState('')
-  const [erro, setErro] = useState('')
-
-  const maxInput = vencimentoMaximo !== undefined ? paraInputDate(vencimentoMaximo - 24 * 60 * 60 * 1000) : undefined
-
-  function adicionar() {
-    const nome = texto.trim()
-    if (!nome) return
-    let vencimento: number | undefined
-    if (data) {
-      const ms = deInputDate(data)
-      if (vencimentoMaximo !== undefined && ms >= vencimentoMaximo) {
-        setErro('A validade precisa ser antes do vencimento da atividade.')
-        return
-      }
-      vencimento = ms
-    }
-    onAdicionar(nome, vencimento, obsTexto.trim() || undefined)
-    setTexto('')
-    setData('')
-    setObsTexto('')
-    setErro('')
-  }
-
-  return (
-    <div className="stack" style={{ gap: 6 }}>
-      {[...subatividades].sort(compararAtividades).map((sub) => {
-        const vencida = !sub.concluida && !!sub.vencimento && sub.vencimento < Date.now()
-        return (
-          <div key={sub.id} className="row" style={{ gap: 8, alignItems: 'center' }}>
-            <input
-              type="checkbox"
-              checked={sub.concluida}
-              onChange={() => onToggle(sub.id)}
-              style={{ width: 16, height: 16, flexShrink: 0 }}
-            />
-            <span
-              className="text-sm"
-              style={{
-                flex: 1,
-                textDecoration: sub.concluida ? 'line-through' : undefined,
-                opacity: sub.concluida ? 0.6 : 1,
-                color: vencida ? 'var(--danger)' : undefined,
-              }}
-            >
-              {sub.nome}
-            </span>
-            {sub.vencimento && (
-              <span className="text-dim text-sm" style={{ whiteSpace: 'nowrap', color: vencida ? 'var(--danger)' : undefined }}>
-                {formatarData(sub.vencimento)}
-              </span>
-            )}
-            <button
-              type="button"
-              className="btn btn-ghost"
-              style={{ padding: '2px 6px' }}
-              onClick={() => onEditar(sub)}
-              aria-label="Editar subatividade"
-            >
-              <Pencil size={13} strokeWidth={1.5} />
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              style={{ padding: '2px 6px' }}
-              onClick={() => onRemover(sub.id)}
-              aria-label="Remover subatividade"
-            >
-              <Trash2 size={13} strokeWidth={1.5} />
-            </button>
-          </div>
-        )
-      })}
-      <div className="row">
-        <input
-          placeholder="Nova subatividade..."
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              adicionar()
-            }
-          }}
-          style={{ fontSize: 13, flex: 2 }}
-        />
-        <input
-          type="date"
-          value={data}
-          onChange={(e) => {
-            setData(e.target.value)
-            setErro('')
-          }}
-          max={maxInput}
-          style={{ flex: 1, minWidth: 130 }}
-          aria-label="Validade da nova subatividade"
-        />
-        <button type="button" className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={adicionar} aria-label="Adicionar subatividade">
-          <Plus size={14} strokeWidth={1.5} />
-        </button>
-      </div>
-      <input
-        placeholder="Observação (opcional)..."
-        value={obsTexto}
-        onChange={(e) => setObsTexto(e.target.value)}
-        style={{ fontSize: 13 }}
-      />
-      {erro && <p className="error-text">{erro}</p>}
-    </div>
-  )
-}
-
 export function AtividadesPage() {
-  const { user } = useAuth()
   const isDesktop = useIsDesktop()
-  const { projetos, setProjetos, loading, busca, filtroReceita } = useProjetosContexto()
+  const { projetos, loading, busca, filtroReceita } = useProjetosContexto()
+  const {
+    alternarConcluida,
+    removerAtividade,
+    alternarSubatividade,
+    adicionarSubatividade,
+    atualizarSubatividade,
+    removerSubatividade,
+    salvarEdicaoAtividade,
+    adicionarAtividade,
+  } = useAtividadesMutations()
   const [visao, setVisao] = useState<'lista' | 'kanban'>('lista')
   const [gruposColapsados, setGruposColapsados] = useState<Set<ColunaKanban>>(new Set())
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
@@ -247,190 +110,19 @@ export function AtividadesPage() {
     })
   }
 
-  async function salvarSubtarefas(projeto: Projeto, novasSubtarefas: Subtarefa[]) {
-    if (!user) return
-    setProjetos((prev) => prev.map((p) => (p.id === projeto.id ? { ...p, subtarefas: novasSubtarefas } : p)))
-    await atualizarProjeto(user.uid, projeto.id, { subtarefas: novasSubtarefas })
-  }
-
-  function alternarConcluida(projeto: Projeto, subtarefaId: string) {
-    const novas = projeto.subtarefas.map((s) => (s.id === subtarefaId ? { ...s, concluida: !s.concluida } : s))
-    salvarSubtarefas(projeto, novas)
-  }
-
-  function removerAtividade(projeto: Projeto, subtarefaId: string) {
-    const novas = projeto.subtarefas.filter((s) => s.id !== subtarefaId)
-    salvarSubtarefas(projeto, novas)
-  }
-
-  function alternarSubatividade(projeto: Projeto, subtarefaId: string, subId: string) {
-    const novas = projeto.subtarefas.map((s) => {
-      if (s.id !== subtarefaId) return s
-      const subs = (s.subatividades ?? []).map((sub) => (sub.id === subId ? { ...sub, concluida: !sub.concluida } : sub))
-      return comConclusaoAutomatica({ ...s, subatividades: subs })
-    })
-    salvarSubtarefas(projeto, novas)
-  }
-
-  function adicionarSubatividade(projeto: Projeto, subtarefaId: string, nome: string, vencimento?: number, obs?: string) {
-    const novas = projeto.subtarefas.map((s) => {
-      if (s.id !== subtarefaId) return s
-      const nova: Subatividade = { id: crypto.randomUUID(), nome, concluida: false }
-      if (vencimento) nova.vencimento = vencimento
-      if (obs) nova.obs = obs
-      return comConclusaoAutomatica({ ...s, subatividades: [...(s.subatividades ?? []), nova] })
-    })
-    salvarSubtarefas(projeto, novas)
-    setExpandidos((prev) => new Set(prev).add(subtarefaId))
-  }
-
-  function atualizarSubatividade(
-    projeto: Projeto,
-    subtarefaId: string,
-    subId: string,
-    dados: DadosEdicaoSubatividade,
-  ) {
-    const novas = projeto.subtarefas.map((s) => {
-      if (s.id !== subtarefaId) return s
-      const subs = (s.subatividades ?? []).map((sub) => {
-        if (sub.id !== subId) return sub
-        const atualizado: Subatividade = { ...sub, nome: dados.nome }
-        if (dados.vencimento) atualizado.vencimento = dados.vencimento
-        else delete atualizado.vencimento
-        if (dados.obs) atualizado.obs = dados.obs
-        else delete atualizado.obs
-        return atualizado
-      })
-      return { ...s, subatividades: subs }
-    })
-    salvarSubtarefas(projeto, novas)
-  }
-
-  function removerSubatividade(projeto: Projeto, subtarefaId: string, subId: string) {
-    const novas = projeto.subtarefas.map((s) => {
-      if (s.id !== subtarefaId) return s
-      return comConclusaoAutomatica({ ...s, subatividades: (s.subatividades ?? []).filter((sub) => sub.id !== subId) })
-    })
-    salvarSubtarefas(projeto, novas)
-  }
-
-  function salvarEdicaoAtividade(dados: DadosEdicaoAtividade) {
+  function salvarEdicao(dados: DadosEdicaoAtividade) {
     if (!editando) return
-    const novas = editando.projeto.subtarefas.map((s) => {
-      if (s.id !== editando.subtarefa.id) return s
-      const atualizado: Subtarefa = { ...s, nome: dados.nome }
-      if (dados.vencimento) atualizado.vencimento = dados.vencimento
-      else delete atualizado.vencimento
-      if (dados.obs) atualizado.obs = dados.obs
-      else delete atualizado.obs
-      if (dados.responsavel) atualizado.responsavel = dados.responsavel
-      else delete atualizado.responsavel
-      if (dados.novasSubatividades && dados.novasSubatividades.length > 0) {
-        atualizado.subatividades = [...(atualizado.subatividades ?? []), ...dados.novasSubatividades]
-      }
-      return comConclusaoAutomatica(atualizado)
-    })
-    salvarSubtarefas(editando.projeto, novas)
+    salvarEdicaoAtividade(editando.projeto, editando.subtarefa.id, dados)
   }
 
-  async function adicionarAtividade() {
+  async function handleAdicionarAtividade() {
     const nome = novoNome.trim()
     const projeto = ativos.find((p) => p.id === novoProjetoId)
     if (!nome || !projeto) return
-    const nova: Subtarefa = { id: crypto.randomUUID(), nome, concluida: false }
-    if (novoVencimento) nova.vencimento = deInputDate(novoVencimento)
-    if (novoResponsavel) nova.responsavel = novoResponsavel
-    await salvarSubtarefas(projeto, [...projeto.subtarefas, nova])
+    await adicionarAtividade(projeto, nome, novoVencimento ? deInputDate(novoVencimento) : undefined, novoResponsavel || undefined)
     setNovoNome('')
     setNovoVencimento('')
     setNovoResponsavel('')
-  }
-
-  function renderCartao(item: ItemAtividade) {
-    const { projeto, subtarefa } = item
-    const referencia = dataReferencia(subtarefa)
-    const vencida = subtarefaVencida(comReferencia(subtarefa))
-    const expandido = expandidos.has(subtarefa.id)
-    const subatividades = subtarefa.subatividades ?? []
-    const feitas = subatividades.filter((s) => s.concluida).length
-
-    return (
-      <div key={subtarefa.id} className="card" style={{ padding: '10px 14px' }}>
-        <div className="row" style={{ gap: 8, alignItems: 'flex-start' }}>
-          <button
-            type="button"
-            className="atividade-chevron"
-            onClick={() => alternarExpandido(subtarefa.id)}
-            aria-label={expandido ? 'Recolher subatividades' : 'Ver subatividades'}
-            title={expandido ? 'Recolher subatividades' : 'Ver subatividades'}
-          >
-            <ChevronRight
-              size={14}
-              strokeWidth={1.5}
-              style={{ transform: expandido ? 'rotate(90deg)' : undefined, transition: 'transform 0.15s' }}
-            />
-          </button>
-          <input
-            type="checkbox"
-            checked={subtarefa.concluida}
-            onChange={() => alternarConcluida(projeto, subtarefa.id)}
-            style={{ width: 18, height: 18, flexShrink: 0, marginTop: 2 }}
-          />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p
-              className="text-sm"
-              style={{
-                textDecoration: subtarefa.concluida ? 'line-through' : undefined,
-                opacity: subtarefa.concluida ? 0.6 : 1,
-                color: vencida ? 'var(--danger)' : undefined,
-              }}
-            >
-              {subtarefa.nome}
-            </p>
-            <div className="row-between text-dim text-sm">
-              <span>
-                {projeto.nome}
-                {subtarefa.responsavel ? ` · ${subtarefa.responsavel}` : ''}
-              </span>
-              <span style={{ whiteSpace: 'nowrap', color: vencida ? 'var(--danger)' : undefined }}>
-                {referencia ? formatarData(referencia) : '—'}
-                {subatividades.length > 0 ? ` · ${feitas}/${subatividades.length}` : ''}
-              </span>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            style={{ padding: '4px 8px' }}
-            onClick={() => setEditando({ projeto, subtarefa })}
-            aria-label="Editar atividade"
-          >
-            <Pencil size={15} strokeWidth={1.5} />
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            style={{ padding: '4px 8px' }}
-            onClick={() => removerAtividade(projeto, subtarefa.id)}
-            aria-label="Excluir atividade"
-          >
-            <Trash2 size={15} strokeWidth={1.5} />
-          </button>
-        </div>
-        {expandido && (
-          <div style={{ marginTop: 8, marginLeft: 22, padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 10 }}>
-            <PainelSubatividades
-              subatividades={subatividades}
-              vencimentoMaximo={subtarefa.vencimento}
-              onToggle={(id) => alternarSubatividade(projeto, subtarefa.id, id)}
-              onAdicionar={(nome, vencimento, obs) => adicionarSubatividade(projeto, subtarefa.id, nome, vencimento, obs)}
-              onEditar={(sub) => setEditandoSub({ projeto, subtarefa, subatividade: sub })}
-              onRemover={(id) => removerSubatividade(projeto, subtarefa.id, id)}
-            />
-          </div>
-        )}
-      </div>
-    )
   }
 
   const pessoasDoNovoProjeto = ativos.find((p) => p.id === novoProjetoId)?.pessoasEnvolvidas ?? []
@@ -475,7 +167,7 @@ export function AtividadesPage() {
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault()
-              adicionarAtividade()
+              handleAdicionarAtividade()
             }
           }}
         />
@@ -505,7 +197,7 @@ export function AtividadesPage() {
           <button
             type="button"
             className="btn"
-            onClick={adicionarAtividade}
+            onClick={handleAdicionarAtividade}
             disabled={!novoNome.trim() || !novoProjetoId}
             aria-label="Adicionar atividade"
           >
@@ -595,7 +287,29 @@ export function AtividadesPage() {
                   {coluna.label.toUpperCase()}
                   <span className="status-pill-count">{coluna.itens.length}</span>
                 </button>
-                {!colapsado && <div className="stack" style={{ gap: 8 }}>{coluna.itens.map((item) => renderCartao(item))}</div>}
+                {!colapsado && (
+                  <div className="stack" style={{ gap: 8 }}>
+                    {coluna.itens.map(({ projeto, subtarefa }) => (
+                      <CartaoAtividade
+                        key={subtarefa.id}
+                        projeto={projeto}
+                        subtarefa={subtarefa}
+                        expandido={expandidos.has(subtarefa.id)}
+                        onToggleExpandir={() => alternarExpandido(subtarefa.id)}
+                        onToggleConcluida={() => alternarConcluida(projeto, subtarefa.id)}
+                        onEditar={() => setEditando({ projeto, subtarefa })}
+                        onRemover={() => removerAtividade(projeto, subtarefa.id)}
+                        onToggleSubatividade={(id) => alternarSubatividade(projeto, subtarefa.id, id)}
+                        onAdicionarSubatividade={(nome, vencimento, obs) => {
+                          adicionarSubatividade(projeto, subtarefa.id, nome, vencimento, obs)
+                          setExpandidos((prev) => new Set(prev).add(subtarefa.id))
+                        }}
+                        onEditarSubatividade={(sub) => setEditandoSub({ projeto, subtarefa, subatividade: sub })}
+                        onRemoverSubatividade={(id) => removerSubatividade(projeto, subtarefa.id, id)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )
           })}
@@ -607,7 +321,7 @@ export function AtividadesPage() {
           subtarefa={editando.subtarefa}
           pessoasDisponiveis={editando.projeto.pessoasEnvolvidas ?? []}
           onClose={() => setEditando(null)}
-          onSave={salvarEdicaoAtividade}
+          onSave={salvarEdicao}
         />
       )}
 

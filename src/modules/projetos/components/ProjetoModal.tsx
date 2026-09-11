@@ -2,7 +2,9 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Modal } from '../../../shared/components/Modal'
 import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM } from '../lib/calculo'
+import { useProjetosContexto } from '../lib/ProjetosContext'
 import type { MesAnoRef, NovoProjeto, Projeto, ValorPontual } from '../lib/types'
+import { AtividadesDoProjeto } from './AtividadesDoProjeto'
 
 const MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -83,6 +85,10 @@ export function ProjetoModal({
   onSave: (dados: NovoProjeto) => void
   onDelete?: () => void
 }) {
+  const { projetos } = useProjetosContexto()
+  const projetoAtual = projeto ? (projetos.find((p) => p.id === projeto.id) ?? projeto) : null
+  const [aba, setAba] = useState<'dados' | 'faturamento' | 'atividades'>('dados')
+
   const base = projeto ?? projetoInicial()
   const [nome, setNome] = useState(base.nome)
   const [status, setStatus] = useState<Projeto['status']>(base.status)
@@ -151,151 +157,175 @@ export function ProjetoModal({
   }
 
   return (
-    <Modal onClose={onClose}>
+    <Modal onClose={onClose} wide>
       <div className="stack">
         <h3>{projeto ? 'Editar projeto' : 'Novo projeto'}</h3>
       </div>
 
-      <label>
-        Nome
-        <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome do projeto" />
-      </label>
-
-      <div className="row">
-        <label style={{ flex: 1 }}>
-          Status
-          <select value={status} onChange={(e) => setStatus(e.target.value as Projeto['status'])}>
-            {STATUS_PROJETO_ORDEM.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_PROJETO_LABEL[s]}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <div className="stack" style={{ gap: 6 }}>
-        <button
-          type="button"
-          className={`chip ${recorrente ? 'active' : ''}`}
-          onClick={() => setRecorrente((r) => !r)}
-        >
-          {recorrente ? '✓ ' : ''}Recorrente (o padrão de meses se repete todo ano)
+      <div className="modal-tabs">
+        <button type="button" className={aba === 'dados' ? 'active' : ''} onClick={() => setAba('dados')}>
+          Dados
         </button>
-      </div>
-
-      <div className="row">
-        <label style={{ flex: 1 }}>
-          Início
-          <input type="month" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
-        </label>
-        {!(recorrente && perpetuo) && (
-          <label style={{ flex: 1 }}>
-            Fim
-            <input type="month" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
-          </label>
+        <button type="button" className={aba === 'faturamento' ? 'active' : ''} onClick={() => setAba('faturamento')}>
+          Faturamento
+        </button>
+        {projetoAtual && (
+          <button type="button" className={aba === 'atividades' ? 'active' : ''} onClick={() => setAba('atividades')}>
+            Atividades{projetoAtual.subtarefas.length > 0 ? ` (${projetoAtual.subtarefas.length})` : ''}
+          </button>
         )}
       </div>
 
-      {recorrente && (
-        <button
-          type="button"
-          className={`chip ${perpetuo ? 'active' : ''}`}
-          onClick={() => setPerpetuo((p) => !p)}
-        >
-          {perpetuo ? '✓ ' : ''}Perpétuo (sem data de término)
-        </button>
+      {aba === 'dados' && (
+        <div className="stack">
+          <label>
+            Nome
+            <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome do projeto" />
+          </label>
+
+          <div className="row">
+            <label style={{ flex: 1 }}>
+              Status
+              <select value={status} onChange={(e) => setStatus(e.target.value as Projeto['status'])}>
+                {STATUS_PROJETO_ORDEM.map((s) => (
+                  <option key={s} value={s}>
+                    {STATUS_PROJETO_LABEL[s]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="stack" style={{ gap: 6 }}>
+            <span className="text-dim text-sm">Pessoas envolvidas</span>
+            {pessoasEnvolvidas.length > 0 && (
+              <div className="chip-grid">
+                {pessoasEnvolvidas.map((p) => (
+                  <button key={p} type="button" className="chip active" onClick={() => removerPessoa(p)}>
+                    {p} ✕
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="row">
+              <input
+                placeholder="Nome da pessoa..."
+                value={novaPessoa}
+                onChange={(e) => setNovaPessoa(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    adicionarPessoa()
+                  }
+                }}
+              />
+              <button type="button" className="btn" onClick={adicionarPessoa} aria-label="Adicionar pessoa">
+                <Plus size={16} strokeWidth={1.5} />
+              </button>
+            </div>
+          </div>
+
+          <label>
+            Observações
+            <textarea rows={3} value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Opcional" />
+          </label>
+        </div>
       )}
 
-      <div className="stack" style={{ gap: 6 }}>
-        <span className="text-dim text-sm">Valor esperado por mês (R$)</span>
-        <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
-          {MESES.map((m, i) => (
-            <label key={m} style={{ width: 'calc(33.33% - 6px)' }}>
-              {m.slice(0, 3)}
-              <MoedaInput valor={valoresPorMes[i]} onChange={(v) => atualizarValorMes(i, v)} />
-            </label>
-          ))}
-        </div>
-        <p className="text-dim text-sm">
-          {recorrente
-            ? 'Esse padrão de meses se repete em todo ano dentro do período de vigência.'
-            : 'Marque só os meses em que esse projeto realmente paga, dentro do período acima.'}
-        </p>
-      </div>
-
-      <div className="stack" style={{ gap: 6 }}>
-        <span className="text-dim text-sm">Valor pontual (prêmio ou bônus que não se repete todo ano)</span>
-        {valoresPontuais.length > 0 && (
+      {aba === 'faturamento' && (
+        <div className="stack">
           <div className="stack" style={{ gap: 6 }}>
-            {valoresPontuais.map((v) => (
-              <div key={v.id} className="row-between card" style={{ padding: '8px 12px' }}>
-                <span className="text-sm">
-                  {MESES[v.mes - 1]}/{v.ano}
-                </span>
-                <span className="text-sm" style={{ fontWeight: 600 }}>
-                  {formatarMoeda(v.valor)}
-                </span>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  style={{ padding: '4px 8px' }}
-                  onClick={() => removerValorPontual(v.id)}
-                  aria-label="Remover valor pontual"
-                >
-                  <Trash2 size={15} strokeWidth={1.5} />
-                </button>
+            <button
+              type="button"
+              className={`chip ${recorrente ? 'active' : ''}`}
+              onClick={() => setRecorrente((r) => !r)}
+            >
+              {recorrente ? '✓ ' : ''}Recorrente (o padrão de meses se repete todo ano)
+            </button>
+          </div>
+
+          <div className="row">
+            <label style={{ flex: 1 }}>
+              Início
+              <input type="month" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
+            </label>
+            {!(recorrente && perpetuo) && (
+              <label style={{ flex: 1 }}>
+                Fim
+                <input type="month" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
+              </label>
+            )}
+          </div>
+
+          {recorrente && (
+            <button
+              type="button"
+              className={`chip ${perpetuo ? 'active' : ''}`}
+              onClick={() => setPerpetuo((p) => !p)}
+            >
+              {perpetuo ? '✓ ' : ''}Perpétuo (sem data de término)
+            </button>
+          )}
+
+          <div className="stack" style={{ gap: 6 }}>
+            <span className="text-dim text-sm">Valor esperado por mês (R$)</span>
+            <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
+              {MESES.map((m, i) => (
+                <label key={m} style={{ width: 'calc(33.33% - 6px)' }}>
+                  {m.slice(0, 3)}
+                  <MoedaInput valor={valoresPorMes[i]} onChange={(v) => atualizarValorMes(i, v)} />
+                </label>
+              ))}
+            </div>
+            <p className="text-dim text-sm">
+              {recorrente
+                ? 'Esse padrão de meses se repete em todo ano dentro do período de vigência.'
+                : 'Marque só os meses em que esse projeto realmente paga, dentro do período acima.'}
+            </p>
+          </div>
+
+          <div className="stack" style={{ gap: 6 }}>
+            <span className="text-dim text-sm">Valor pontual (prêmio ou bônus que não se repete todo ano)</span>
+            {valoresPontuais.length > 0 && (
+              <div className="stack" style={{ gap: 6 }}>
+                {valoresPontuais.map((v) => (
+                  <div key={v.id} className="row-between card" style={{ padding: '8px 12px' }}>
+                    <span className="text-sm">
+                      {MESES[v.mes - 1]}/{v.ano}
+                    </span>
+                    <span className="text-sm" style={{ fontWeight: 600 }}>
+                      {formatarMoeda(v.valor)}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      style={{ padding: '4px 8px' }}
+                      onClick={() => removerValorPontual(v.id)}
+                      aria-label="Remover valor pontual"
+                    >
+                      <Trash2 size={15} strokeWidth={1.5} />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-        <div className="row">
-          <input
-            type="month"
-            value={novoPontualMes}
-            onChange={(e) => setNovoPontualMes(e.target.value)}
-            style={{ flex: 1 }}
-          />
-          <MoedaInput valor={novoPontualValor} onChange={setNovoPontualValor} style={{ flex: 1 }} />
-          <button type="button" className="btn" onClick={adicionarValorPontual} aria-label="Adicionar valor pontual">
-            <Plus size={16} strokeWidth={1.5} />
-          </button>
-        </div>
-      </div>
-
-      <div className="stack" style={{ gap: 6 }}>
-        <span className="text-dim text-sm">Pessoas envolvidas</span>
-        {pessoasEnvolvidas.length > 0 && (
-          <div className="chip-grid">
-            {pessoasEnvolvidas.map((p) => (
-              <button key={p} type="button" className="chip active" onClick={() => removerPessoa(p)}>
-                {p} ✕
+            )}
+            <div className="row">
+              <input
+                type="month"
+                value={novoPontualMes}
+                onChange={(e) => setNovoPontualMes(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              <MoedaInput valor={novoPontualValor} onChange={setNovoPontualValor} style={{ flex: 1 }} />
+              <button type="button" className="btn" onClick={adicionarValorPontual} aria-label="Adicionar valor pontual">
+                <Plus size={16} strokeWidth={1.5} />
               </button>
-            ))}
+            </div>
           </div>
-        )}
-        <div className="row">
-          <input
-            placeholder="Nome da pessoa..."
-            value={novaPessoa}
-            onChange={(e) => setNovaPessoa(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                adicionarPessoa()
-              }
-            }}
-          />
-          <button type="button" className="btn" onClick={adicionarPessoa} aria-label="Adicionar pessoa">
-            <Plus size={16} strokeWidth={1.5} />
-          </button>
         </div>
-      </div>
+      )}
 
-      <label>
-        Observações
-        <textarea rows={3} value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Opcional" />
-      </label>
+      {aba === 'atividades' && projetoAtual && <AtividadesDoProjeto projeto={projetoAtual} />}
 
       <div className="row">
         {onDelete && (

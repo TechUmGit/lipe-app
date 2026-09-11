@@ -2,20 +2,8 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Modal } from '../../../shared/components/Modal'
 import { compararAtividades } from '../lib/calculo'
+import { deInputDate, formatarData, paraInputDate } from '../lib/datas'
 import type { Subatividade, Subtarefa } from '../lib/types'
-
-function paraInputDate(ms: number) {
-  return new Date(ms).toISOString().slice(0, 10)
-}
-
-function deInputDate(valor: string) {
-  const [ano, mes, dia] = valor.split('-').map(Number)
-  return new Date(ano, mes - 1, dia).getTime()
-}
-
-function formatarData(ms: number) {
-  return new Date(ms).toLocaleDateString('pt-BR')
-}
 
 export interface DadosEdicaoAtividade {
   nome: string
