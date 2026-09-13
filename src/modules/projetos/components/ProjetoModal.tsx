@@ -140,7 +140,7 @@ export function ProjetoModal({
       dataFim: recorrente && perpetuo ? null : deInputMonth(dataFim),
       valoresPorMes,
       valoresPontuais,
-      subtarefas: base.subtarefas,
+      subtarefas: projetoAtual?.subtarefas ?? base.subtarefas,
       obs: obs.trim(),
       pessoasEnvolvidas,
     }
