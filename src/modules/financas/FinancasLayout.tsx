@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Landmark, Tag, Upload } from 'lucide-react'
+import { Eye, EyeOff, Landmark, Tag, TrendingUp, Upload } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Topbar } from '../../shared/components/Topbar'
@@ -47,6 +47,15 @@ export function FinancasLayout() {
             >
               {oculto ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
             </button>
+            <Link
+              to="/financas/perspectiva"
+              className="btn btn-ghost"
+              style={{ padding: '6px 10px' }}
+              aria-label="Perspectiva e PL"
+              title="Perspectiva e PL"
+            >
+              <TrendingUp size={18} strokeWidth={1.5} />
+            </Link>
             <Link
               to="/financas/importar"
               className="btn btn-ghost"

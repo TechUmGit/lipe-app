@@ -21,6 +21,7 @@ import { ImportarExtratoPage } from './modules/financas/pages/ImportarExtratoPag
 import { CategoriasPage } from './modules/financas/pages/CategoriasPage'
 import { ConexoesBancariasPage } from './modules/financas/pages/ConexoesBancariasPage'
 import { ConciliacaoLogPage } from './modules/financas/pages/ConciliacaoLogPage'
+import { PerspectivaPage } from './modules/financas/pages/PerspectivaPage'
 
 function App() {
   return (
@@ -126,6 +127,15 @@ function App() {
         element={
           <ProtectedRoute>
             <ConciliacaoLogPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/financas/perspectiva"
+        element={
+          <ProtectedRoute>
+            <PerspectivaPage />
           </ProtectedRoute>
         }
       />

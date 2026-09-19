@@ -671,3 +671,54 @@ body.wide #root {
   background: var(--success);
   border-color: var(--success);
 }
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-dim);
+  text-align: left;
+}
+
+.pl-resumo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.pl-resumo-grid .card {
+  padding: 12px 14px;
+}
+
+@media (min-width: 900px) {
+  .pl-resumo-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.pl-table tbody tr {
+  cursor: pointer;
+}
+
+.pl-table tr.pl-pendente td,
+.pl-table tr.pl-pendente td:first-child {
+  background: var(--surface-2);
+}
+
+.pl-table tr.pl-proxima td {
+  box-shadow: inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent);
+}
+
+.pl-auto {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.pl-pos {
+  color: var(--success);
+}
+
+.pl-neg {
+  color: var(--danger);
+}

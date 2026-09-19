@@ -1,6 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Modal } from '../../../shared/components/Modal'
+import { MoedaInput } from '../../../shared/components/MoedaInput'
 import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM } from '../lib/calculo'
 import { useProjetosContexto } from '../lib/ProjetosContext'
 import type { MesAnoRef, NovoProjeto, Projeto, ValorPontual } from '../lib/types'
@@ -41,37 +42,6 @@ function projetoInicial(): NovoProjeto {
 
 function formatarMoeda(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
-/** Input que formata como moeda enquanto digita — cada dígito entra pela direita, como em app de banco. */
-function MoedaInput({
-  valor,
-  onChange,
-  style,
-}: {
-  valor: number
-  onChange: (novoValor: number) => void
-  style?: React.CSSProperties
-}) {
-  const centavos = Math.round(valor * 100)
-  const texto = centavos === 0 ? '' : formatarMoeda(centavos / 100)
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const digitos = e.target.value.replace(/\D/g, '')
-    const novosCentavos = digitos ? parseInt(digitos, 10) : 0
-    onChange(novosCentavos / 100)
-  }
-
-  return (
-    <input
-      type="text"
-      inputMode="numeric"
-      placeholder="R$ 0,00"
-      value={texto}
-      onChange={handleChange}
-      style={style}
-    />
-  )
 }
 
 export function ProjetoModal({

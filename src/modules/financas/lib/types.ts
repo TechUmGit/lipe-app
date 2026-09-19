@@ -117,3 +117,43 @@ export interface SyncLog {
   ambiguas?: number
   erro?: string
 }
+
+/** Premissas do plano de Perspectiva e PL (taxas em decimal: 0.045 = 4,5%). */
+export interface ParametrosPerspectiva {
+  inflacaoAnual: number
+  rendimentoDesejadoAnual: number
+  impostoRenda: number
+  /** % ao ano do PL real que dá a "Remuneração Fillipe" mensal. */
+  retiradaAnualPct: number
+  /** Renda mensal líquida que o PL precisa sustentar (define a meta de PL). */
+  rendaMensalDesejada: number
+  jurosRealMetaAnual: number
+  salarioDesejadoMensal: number
+  /** 'AAAA-MM' em que o salário desejado vale o valor informado; depois disso corrige pela inflação. */
+  salarioReferencia: string
+  /** 'AAAA-MM' do mês zero do plano (saldo inicial zerado). O primeiro mês do plano é o seguinte. */
+  mesBase: string
+  idadeBase: number
+  idadeMeta: number
+}
+
+/** Valores digitados de um mês. Campo ausente = usa a regra padrão de projeção. */
+export interface MesPerspectiva {
+  /** Linha "branca" da planilha: o mês já foi conferido com os valores reais. */
+  preenchido?: boolean
+  investimentos?: number
+  consorcios?: number
+  retiradas?: number
+  xCapital?: number
+  custodiaFillipe?: number
+  custodiaOutros?: number
+}
+
+export interface PlanoPerspectiva {
+  parametros: ParametrosPerspectiva
+  /** Chave 'AAAA-MM'. */
+  meses: Record<string, MesPerspectiva>
+  /** P/L projetado "congelado" por mês (chave 'AAAA-MM'), base do Delta Projetado. */
+  planoCongelado?: Record<string, number>
+  planoCongeladoRotulo?: string
+}

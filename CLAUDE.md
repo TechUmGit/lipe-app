@@ -91,6 +91,30 @@ categoria, orçamento mensal, valor mensal de projeto): em vez de um valor
 um novo campo que muda de valor ao longo do tempo, considere esse padrão em
 vez de sobrescrever.
 
+### Perspectiva e PL (Finanças)
+
+Tela própria em `/financas/perspectiva` (rota de topo, como
+`/financas/categorias` — no desktop o `FinancasLayout` mostra painéis fixos
+e ignora o `<Outlet/>`, então rotas filhas não aparecem lá). Projeta o
+patrimônio líquido mês a mês até a idade-meta (planilha "Perspectiva PL" do
+usuário). Tudo vive num **único documento**
+`users/{uid}/financas_perspectiva/plano`: premissas (`parametros`), um mapa
+`meses['AAAA-MM']` só com o que foi digitado, e `planoCongelado`.
+
+- `lib/perspectivaCalculo.ts` é puro (sem React/Firebase) e replica as
+  fórmulas da planilha; foi validado contra os valores calculados do Excel
+  (bate ao centavo). Único desvio proposital: "Custódia Outros" não soma a
+  *taxa* ao saldo como a planilha fazia por engano (`L + H`).
+- Mês com `preenchido: true` usa a custódia real digitada; os demais
+  projetam a partir do último saldo conhecido. Campo ausente no mês =
+  regra padrão (retiradas corrigem pela inflação, consórcios repetem o mês
+  anterior, X Capital e investimentos = 0).
+- Exportar/Importar JSON na própria tela é o caminho pra migrar dados.
+
+**O repositório é público**: nunca commite dados financeiros pessoais
+(seeds, exports, fixtures com valores reais). Dados de usuário entram pelo
+app (ou por backup importado na tela), não pelo código.
+
 ### Integração Pluggy (Open Finance)
 
 Backend em `functions/`, Cloud Functions v2 (`us-central1`, projeto
@@ -133,10 +157,14 @@ Dois problemas resolvidos e que tendem a reaparecer em campo numérico novo:
    usada no projeto é manter o texto bruto digitado num state `string`
    paralelo, e só fazer `Number(texto)` no momento de salvar.
 2. **Máscara de moeda**: `MoedaInput` (em
-   `src/modules/projetos/components/ProjetoModal.tsx`) formata como R$
-   enquanto digita tratando cada tecla como dígito de centavo (como app de
-   banco) — a fonte de verdade é sempre o valor numérico prop, nunca um
-   texto intermediário, o que evita o bug acima por construção.
+   `src/shared/components/MoedaInput.tsx`) formata como R$ enquanto digita
+   tratando cada tecla como dígito de centavo (como app de banco) — a fonte
+   de verdade é sempre o valor numérico prop, nunca um texto intermediário,
+   o que evita o bug acima por construção. `MoedaInputComSinal`, no mesmo
+   arquivo, adiciona um botão −/+ pra valores que podem ser negativos
+   (retiradas, consórcios). Não coloque esses inputs dentro de um `<label>`
+   junto com outros botões: o clique no texto do label aciona o primeiro
+   botão (use `div.campo`, que tem o mesmo visual).
 
 ## Notas de deploy
 
