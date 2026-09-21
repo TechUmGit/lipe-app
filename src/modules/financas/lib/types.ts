@@ -134,7 +134,10 @@ export interface ParametrosPerspectiva {
   /** 'AAAA-MM' do mês zero do plano (saldo inicial zerado). O primeiro mês do plano é o seguinte. */
   mesBase: string
   idadeBase: number
+  /** Idade em que a meta de P/L precisa estar atingida. */
   idadeMeta: number
+  /** Até que idade a projeção mês a mês se estende (a lista termina no aniversário dessa idade). */
+  idadeFinal: number
 }
 
 /** Valores digitados de um mês. Campo ausente = usa a regra padrão de projeção. */

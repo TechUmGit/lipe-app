@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, ChevronRight, Download, Eye, EyeOff, Snowflake, SlidersHorizontal, Upload } from 'lucide-react'
+import { Check, Download, Eye, EyeOff, Snowflake, SlidersHorizontal, Upload } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { Topbar } from '../../../shared/components/Topbar'
@@ -43,6 +43,13 @@ function Delta({ v }: { v: number }) {
   )
 }
 
+/** Rola a lista até o mês "próximo a preencher", deixando-o no terço superior da área visível. */
+function rolarAteProxima(wrap: HTMLDivElement | null) {
+  const linha = wrap?.querySelector<HTMLElement>('tr.pl-proxima')
+  if (!wrap || !linha) return
+  wrap.scrollTop = Math.max(0, linha.offsetTop - wrap.clientHeight / 3)
+}
+
 function Percentual({ v }: { v: number }) {
   return <>{(v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%</>
 }
@@ -52,10 +59,11 @@ export function PerspectivaPage() {
   const isDesktop = useIsDesktop()
   const { oculto, alternar } = useFinancasPrivacidade()
   const inputArquivo = useRef<HTMLInputElement>(null)
+  const listaRef = useRef<HTMLDivElement>(null)
+  const rolouInicial = useRef(false)
   const [plano, setPlano] = useState<PlanoPerspectiva | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
-  const [anoSelecionado, setAnoSelecionado] = useState<number | null>(null)
   const [detalhado, setDetalhado] = useState(false)
   const [editando, setEditando] = useState<string | null>(null)
   const [premissas, setPremissas] = useState(false)
@@ -76,6 +84,13 @@ export function PerspectivaPage() {
   const resultado = useMemo(() => (plano ? calcularPerspectiva(plano) : null), [plano])
   const resumo = useMemo(() => (resultado ? resumirPerspectiva(resultado) : null), [resultado])
 
+  useEffect(() => {
+    if (resultado && !rolouInicial.current) {
+      rolouInicial.current = true
+      rolarAteProxima(listaRef.current)
+    }
+  }, [resultado])
+
   const padraoDoMes = useMemo(() => {
     if (!plano || !editando) return null
     const semDados = calcularPerspectiva({ ...plano, meses: { ...plano.meses, [editando]: {} } })
@@ -83,11 +98,7 @@ export function PerspectivaPage() {
     return linha ? { consorcios: linha.consorcios, retiradas: linha.retiradas } : null
   }, [plano, editando])
 
-  const anos = useMemo(() => [...new Set(resultado?.linhas.map((l) => l.ano) ?? [])], [resultado])
-  const anoAtivo = anoSelecionado ?? resumo?.proximoAPreencher?.ano ?? resumo?.plFinal?.ano ?? anos[0]
-  const linhasDoAno = resultado?.linhas.filter((l) => l.ano === anoAtivo) ?? []
   const linhaEditada = editando ? resultado?.linhas.find((l) => l.chave === editando) : undefined
-  const indiceAno = anos.indexOf(anoAtivo)
 
   async function comFalha(operacao: () => Promise<void>, reverter: () => void) {
     try {
@@ -163,16 +174,11 @@ export function PerspectivaPage() {
       if (plano && !confirm('Importar substitui todo o plano atual. Continuar?')) return
       await substituirPlano(user.uid, validado)
       setPlano(validado)
-      setAnoSelecionado(null)
+      rolouInicial.current = false
       setErro('')
     } catch {
       setErro('Não consegui ler esse arquivo.')
     }
-  }
-
-  function mudarAno(delta: number) {
-    const novo = anos[indiceAno + delta]
-    if (novo !== undefined) setAnoSelecionado(novo)
   }
 
   function celulasDaLinha(l: LinhaPerspectiva) {
@@ -336,7 +342,7 @@ export function PerspectivaPage() {
               <p className="text-dim text-sm">Nenhum mês preenchido ainda. Preencha o primeiro para ver o comparativo.</p>
             )}
 
-            {resumo.plFinal && (
+            {resumo.plNaMeta && (
               <div className="card stack" style={{ gap: 8 }}>
                 <div className="row-between">
                   <span>Meta de P/L aos {plano.parametros.idadeMeta} anos</span>
@@ -348,9 +354,15 @@ export function PerspectivaPage() {
                   <div style={{ width: `${Math.max(0, Math.min(100, resumo.coberturaMeta * 100))}%` }} />
                 </div>
                 <p className="text-dim text-sm">
-                  Projeção em {rotuloMes(resumo.plFinal.chave)}: <Moeda valor={resumo.plFinal.plReal} opcoes={SEM_CENTAVOS} /> (
-                  <Percentual v={resumo.coberturaMeta} /> da meta)
+                  Projeção aos {plano.parametros.idadeMeta} ({rotuloMes(resumo.plNaMeta.chave)}):{' '}
+                  <Moeda valor={resumo.plNaMeta.plReal} opcoes={SEM_CENTAVOS} /> (<Percentual v={resumo.coberturaMeta} /> da meta)
                 </p>
+                {resumo.plFinal && resumo.plFinal.chave !== resumo.plNaMeta.chave && (
+                  <p className="text-dim text-sm">
+                    Projeção aos {plano.parametros.idadeFinal} ({rotuloMes(resumo.plFinal.chave)}):{' '}
+                    <Moeda valor={resumo.plFinal.plReal} opcoes={SEM_CENTAVOS} />
+                  </p>
+                )}
               </div>
             )}
 
@@ -370,47 +382,18 @@ export function PerspectivaPage() {
             </div>
 
             <div className="stack" style={{ gap: 10 }}>
-              <div className="row-between">
-                <div className="row" style={{ gap: 4 }}>
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    style={{ padding: '6px 8px' }}
-                    onClick={() => mudarAno(-1)}
-                    disabled={indiceAno <= 0}
-                    aria-label="Ano anterior"
-                  >
-                    <ChevronLeft size={18} strokeWidth={1.5} />
+              <div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                {proximo && (
+                  <button type="button" className="chip" onClick={() => rolarAteProxima(listaRef.current)}>
+                    Ir para {rotuloMes(proximo.chave)}
                   </button>
-                  <select
-                    value={anoAtivo}
-                    onChange={(e) => setAnoSelecionado(Number(e.target.value))}
-                    style={{ width: 'auto' }}
-                    aria-label="Ano"
-                  >
-                    {anos.map((a) => (
-                      <option key={a} value={a}>
-                        {a}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    style={{ padding: '6px 8px' }}
-                    onClick={() => mudarAno(1)}
-                    disabled={indiceAno >= anos.length - 1}
-                    aria-label="Próximo ano"
-                  >
-                    <ChevronRight size={18} strokeWidth={1.5} />
-                  </button>
-                </div>
+                )}
                 <button type="button" className={`chip ${detalhado ? 'active' : ''}`} onClick={() => setDetalhado((d) => !d)}>
                   Todas as colunas
                 </button>
               </div>
 
-              <div className="dre-table-wrap">
+              <div className="pl-table-wrap" ref={listaRef}>
                 <table className="dre-table pl-table">
                   <thead>
                     <tr>
@@ -439,7 +422,7 @@ export function PerspectivaPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {linhasDoAno.map((l) => (
+                    {resultado.linhas.map((l) => (
                       <tr
                         key={l.chave}
                         className={`${l.preenchido ? 'pl-preenchida' : 'pl-pendente'} ${proximo?.chave === l.chave ? 'pl-proxima' : ''}`}
@@ -453,6 +436,11 @@ export function PerspectivaPage() {
                               <span style={{ width: 14 }} />
                             )}
                             {rotuloMes(l.chave)}
+                            {l.idade !== undefined && (
+                              <span className="text-dim" style={{ fontSize: 11 }}>
+                                {l.idade}a
+                              </span>
+                            )}
                           </span>
                         </td>
                         {celulasDaLinha(l)}

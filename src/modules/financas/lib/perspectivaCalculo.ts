@@ -1,7 +1,7 @@
 import type { ParametrosPerspectiva, PlanoPerspectiva } from './types'
 
 const MESES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
-const LIMITE_MESES = 600
+const LIMITE_MESES = 1200
 
 export function chaveMes(ano: number, mes: number): string {
   return `${ano}-${String(mes).padStart(2, '0')}`
@@ -43,6 +43,7 @@ export function parametrosPadrao(hoje = new Date()): ParametrosPerspectiva {
     mesBase: chaveMes(hoje.getFullYear() - 1, 12),
     idadeBase: 30,
     idadeMeta: 55,
+    idadeFinal: 100,
   }
 }
 
@@ -102,6 +103,8 @@ export interface ResultadoPerspectiva {
   linhas: LinhaPerspectiva[]
   taxas: Taxas
   metaPL: number
+  /** Mês (aniversário) em que o plano atinge a idade-meta. */
+  chaveMeta: string
 }
 
 /**
@@ -114,7 +117,7 @@ export function calcularPerspectiva(plano: PlanoPerspectiva): ResultadoPerspecti
   const taxas = calcularTaxas(p)
   const { inflacaoMensal, rendimentoRealMensal: rr } = taxas
   const crescimento = 1 + rr + inflacaoMensal
-  const total = Math.min(Math.max(0, Math.round((p.idadeMeta - p.idadeBase) * 12)), LIMITE_MESES)
+  const total = Math.min(Math.max(0, Math.round((p.idadeFinal - p.idadeBase) * 12)), LIMITE_MESES)
 
   const linhas: LinhaPerspectiva[] = []
   let anterior = { pl: 0, custodiaFillipe: 0, custodiaOutros: 0, liquido: 0, consorcios: 0, retiradas: 0 }
@@ -190,26 +193,30 @@ export function calcularPerspectiva(plano: PlanoPerspectiva): ResultadoPerspecti
     }
   }
 
-  return { linhas, taxas, metaPL: metaDePL(p) }
+  return { linhas, taxas, metaPL: metaDePL(p), chaveMeta: somarMeses(p.mesBase, (p.idadeMeta - p.idadeBase) * 12) }
 }
 
 export interface ResumoPerspectiva {
   ultimoPreenchido?: LinhaPerspectiva
   proximoAPreencher?: LinhaPerspectiva
+  /** Linha do mês em que se completa a idade-meta. */
+  plNaMeta?: LinhaPerspectiva
+  /** Última linha da projeção (idade final). */
   plFinal?: LinhaPerspectiva
-  /** Quanto do PL final projetado cobre a meta (1 = 100%). */
+  /** Quanto do PL projetado na idade-meta cobre a meta (1 = 100%). */
   coberturaMeta: number
 }
 
 export function resumirPerspectiva(resultado: ResultadoPerspectiva): ResumoPerspectiva {
-  const { linhas, metaPL } = resultado
+  const { linhas, metaPL, chaveMeta } = resultado
   let ultimoPreenchido: LinhaPerspectiva | undefined
   for (const l of linhas) if (l.preenchido) ultimoPreenchido = l
-  const plFinal = linhas[linhas.length - 1]
+  const plNaMeta = linhas.find((l) => l.chave === chaveMeta)
   return {
     ultimoPreenchido,
     proximoAPreencher: linhas.find((l) => !l.preenchido),
-    plFinal,
-    coberturaMeta: metaPL > 0 && plFinal ? plFinal.plReal / metaPL : 0,
+    plNaMeta,
+    plFinal: linhas[linhas.length - 1],
+    coberturaMeta: metaPL > 0 && plNaMeta ? plNaMeta.plReal / metaPL : 0,
   }
 }

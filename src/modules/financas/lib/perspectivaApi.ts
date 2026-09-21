@@ -83,6 +83,8 @@ export function validarBackup(bruto: unknown): PlanoPerspectiva | string {
     const esperado = campo === 'salarioReferencia' || campo === 'mesBase' ? 'string' : 'number'
     if (typeof p[campo] !== esperado) return `Premissa "${campo}" ausente ou inválida.`
   }
+  // idadeFinal é opcional: backups antigos não têm e assumem o padrão.
+  if (p.idadeFinal !== undefined && typeof p.idadeFinal !== 'number') return 'Premissa "idadeFinal" inválida.'
   if (!REGEX_CHAVE_MES.test(p.mesBase as string) || !REGEX_CHAVE_MES.test(p.salarioReferencia as string)) {
     return 'Datas das premissas devem estar no formato AAAA-MM.'
   }
@@ -98,7 +100,7 @@ export function validarBackup(bruto: unknown): PlanoPerspectiva | string {
   if (congelado && Object.values(congelado).some((v) => typeof v !== 'number')) return 'Plano congelado inválido.'
 
   return {
-    parametros: p as unknown as ParametrosPerspectiva,
+    parametros: { ...parametrosPadrao(), ...(p as unknown as ParametrosPerspectiva) },
     meses: meses as Record<string, MesPerspectiva>,
     planoCongelado: congelado as Record<string, number> | undefined,
     planoCongeladoRotulo: typeof obj.planoCongeladoRotulo === 'string' ? obj.planoCongeladoRotulo : undefined,

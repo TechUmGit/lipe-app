@@ -46,6 +46,7 @@ export function PerspectivaPremissasModal({
   const [mesBase, setMesBase] = useState(parametros.mesBase)
   const [idadeBase, setIdadeBase] = useState(String(parametros.idadeBase))
   const [idadeMeta, setIdadeMeta] = useState(String(parametros.idadeMeta))
+  const [idadeFinal, setIdadeFinal] = useState(String(parametros.idadeFinal))
 
   function montar(): ParametrosPerspectiva | null {
     const decimais = Object.fromEntries(CAMPOS_PERCENTUAIS.map(({ campo }) => [campo, deTexto(percentuais[campo])])) as Record<
@@ -54,8 +55,10 @@ export function PerspectivaPremissasModal({
     >
     const idadeBaseNum = Number(idadeBase)
     const idadeMetaNum = Number(idadeMeta)
+    const idadeFinalNum = Number(idadeFinal)
     if (Object.values(decimais).some((v) => Number.isNaN(v))) return null
-    if (!Number.isInteger(idadeBaseNum) || !Number.isInteger(idadeMetaNum) || idadeMetaNum <= idadeBaseNum) return null
+    if (![idadeBaseNum, idadeMetaNum, idadeFinalNum].every(Number.isInteger)) return null
+    if (idadeMetaNum <= idadeBaseNum || idadeFinalNum < idadeMetaNum || idadeFinalNum > idadeBaseNum + 100) return null
     if (!mesBase || !salarioReferencia) return null
     return {
       ...decimais,
@@ -65,6 +68,7 @@ export function PerspectivaPremissasModal({
       mesBase,
       idadeBase: idadeBaseNum,
       idadeMeta: idadeMetaNum,
+      idadeFinal: idadeFinalNum,
     }
   }
 
@@ -120,9 +124,16 @@ export function PerspectivaPremissasModal({
           Idade nele
           <input type="text" inputMode="numeric" value={idadeBase} onChange={(e) => setIdadeBase(e.target.value)} />
         </label>
+      </div>
+
+      <div className="row">
         <label style={{ flex: 1 }}>
           Idade da meta
           <input type="text" inputMode="numeric" value={idadeMeta} onChange={(e) => setIdadeMeta(e.target.value)} />
+        </label>
+        <label style={{ flex: 1 }}>
+          Projetar até
+          <input type="text" inputMode="numeric" value={idadeFinal} onChange={(e) => setIdadeFinal(e.target.value)} />
         </label>
       </div>
 
@@ -132,7 +143,7 @@ export function PerspectivaPremissasModal({
           <p className="text-sm">Meta de P/L: {formatarMoeda(metaDePL(rascunho))}</p>
         </div>
       ) : (
-        <p className="error-text">Confira os campos: percentuais numéricos e idade da meta maior que a idade inicial.</p>
+        <p className="error-text">Confira os campos: percentuais numéricos, idade da meta maior que a inicial e idade final maior ou igual à da meta.</p>
       )}
 
       <button type="button" className="btn btn-primary" onClick={salvar} disabled={!rascunho}>
