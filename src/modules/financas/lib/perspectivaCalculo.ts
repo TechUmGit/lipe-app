@@ -203,7 +203,7 @@ export interface ResumoPerspectiva {
   plNaMeta?: LinhaPerspectiva
   /** Última linha da projeção (idade final). */
   plFinal?: LinhaPerspectiva
-  /** Quanto do PL projetado na idade-meta cobre a meta (1 = 100%). */
+  /** Quanto do P/L projetado líquido (sem inflação, dinheiro de hoje) na idade-meta cobre a meta (1 = 100%). */
   coberturaMeta: number
 }
 
@@ -217,6 +217,6 @@ export function resumirPerspectiva(resultado: ResultadoPerspectiva): ResumoPersp
     proximoAPreencher: linhas.find((l) => !l.preenchido),
     plNaMeta,
     plFinal: linhas[linhas.length - 1],
-    coberturaMeta: metaPL > 0 && plNaMeta ? plNaMeta.plReal / metaPL : 0,
+    coberturaMeta: metaPL > 0 && plNaMeta ? plNaMeta.plProjetadoLiquido / metaPL : 0,
   }
 }

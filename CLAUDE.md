@@ -99,7 +99,9 @@ e ignora o `<Outlet/>`, então rotas filhas não aparecem lá). Projeta o
 patrimônio líquido mês a mês numa lista contínua (sem separar por ano) até a
 `idadeFinal` (padrão 100 anos); a meta de P/L é lida no mês em que se
 completa a `idadeMeta` (55), não no fim da lista (planilha "Perspectiva PL"
-do usuário). Depois da idade-meta os valores são nominais, inflados. Tudo vive num **único documento**
+do usuário). A meta está em dinheiro de hoje, então é comparada com a
+coluna "P/L proj. líquido" (só rendimento real, sem inflação) e não com o P/L
+Real, que é nominal. Depois da idade-meta os valores nominais ficam inflados. Tudo vive num **único documento**
 `users/{uid}/financas_perspectiva/plano`: premissas (`parametros`), um mapa
 `meses['AAAA-MM']` só com o que foi digitado, e `planoCongelado`.
 

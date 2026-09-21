@@ -345,7 +345,7 @@ export function PerspectivaPage() {
             {resumo.plNaMeta && (
               <div className="card stack" style={{ gap: 8 }}>
                 <div className="row-between">
-                  <span>Meta de P/L aos {plano.parametros.idadeMeta} anos</span>
+                  <span>Meta de P/L aos {plano.parametros.idadeMeta} anos (dinheiro de hoje)</span>
                   <strong>
                     <Moeda valor={resultado.metaPL} opcoes={SEM_CENTAVOS} />
                   </strong>
@@ -354,13 +354,17 @@ export function PerspectivaPage() {
                   <div style={{ width: `${Math.max(0, Math.min(100, resumo.coberturaMeta * 100))}%` }} />
                 </div>
                 <p className="text-dim text-sm">
-                  Projeção aos {plano.parametros.idadeMeta} ({rotuloMes(resumo.plNaMeta.chave)}):{' '}
-                  <Moeda valor={resumo.plNaMeta.plReal} opcoes={SEM_CENTAVOS} /> (<Percentual v={resumo.coberturaMeta} /> da meta)
+                  P/L proj. líquido aos {plano.parametros.idadeMeta} ({rotuloMes(resumo.plNaMeta.chave)}):{' '}
+                  <Moeda valor={resumo.plNaMeta.plProjetadoLiquido} opcoes={SEM_CENTAVOS} /> (
+                  <Percentual v={resumo.coberturaMeta} /> da meta)
+                </p>
+                <p className="text-dim text-sm">
+                  Em valores nominais (com inflação): <Moeda valor={resumo.plNaMeta.plReal} opcoes={SEM_CENTAVOS} />
                 </p>
                 {resumo.plFinal && resumo.plFinal.chave !== resumo.plNaMeta.chave && (
                   <p className="text-dim text-sm">
-                    Projeção aos {plano.parametros.idadeFinal} ({rotuloMes(resumo.plFinal.chave)}):{' '}
-                    <Moeda valor={resumo.plFinal.plReal} opcoes={SEM_CENTAVOS} />
+                    P/L proj. líquido aos {plano.parametros.idadeFinal} ({rotuloMes(resumo.plFinal.chave)}):{' '}
+                    <Moeda valor={resumo.plFinal.plProjetadoLiquido} opcoes={SEM_CENTAVOS} />
                   </p>
                 )}
               </div>
