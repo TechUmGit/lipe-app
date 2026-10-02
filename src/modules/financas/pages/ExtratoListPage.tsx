@@ -1,9 +1,10 @@
-import { ArrowDownLeft, ArrowUpRight, Landmark } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, CalendarClock, Landmark } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { LancamentoModal } from '../components/LancamentoModal'
 import { MESES } from '../components/MonthSwitcher'
 import { Moeda } from '../components/Moeda'
+import { competenciaAjustada } from '../lib/competencia'
 import { agruparPorDia } from '../lib/dateGroups'
 import {
   atualizarLancamento,
@@ -152,12 +153,29 @@ export function ExtratoListPage() {
 
   const grupos = useMemo(() => agruparPorDia(lancamentosFiltrados), [lancamentosFiltrados])
 
-  async function salvarDetalhe(id: string, categoriaId: string, obs: string, descricao: string) {
+  async function salvarDetalhe(
+    id: string,
+    dados: { categoriaId: string; obs: string; descricao: string; mes: number; ano: number },
+  ) {
     if (!user) return
+    const categoriaFinal = dados.categoriaId || null
+    const saiuDoFiltro = mesFiltro !== null && (dados.mes !== mesFiltro || dados.ano !== anoFiltro)
     setLancamentos((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, categoriaId: categoriaId || null, obs, descricao } : l)),
+      saiuDoFiltro
+        ? prev.filter((l) => l.id !== id)
+        : prev.map((l) =>
+            l.id === id
+              ? { ...l, categoriaId: categoriaFinal, obs: dados.obs, descricao: dados.descricao, mes: dados.mes, ano: dados.ano }
+              : l,
+          ),
     )
-    await atualizarLancamento(user.uid, id, { categoriaId: categoriaId || null, obs, descricao })
+    await atualizarLancamento(user.uid, id, {
+      categoriaId: categoriaFinal,
+      obs: dados.obs,
+      descricao: dados.descricao,
+      mes: dados.mes,
+      ano: dados.ano,
+    })
     notificarMudanca()
   }
 
@@ -342,6 +360,16 @@ export function ExtratoListPage() {
                               <title>Veio do banco automaticamente, ainda não revisado</title>
                             </Landmark>
                           )}
+                          {competenciaAjustada(l) && (
+                            <CalendarClock
+                              size={12}
+                              strokeWidth={1.5}
+                              color="var(--accent-strong)"
+                              aria-label="Competência ajustada"
+                            >
+                              <title>Competência ajustada: conta em {MESES[l.mes - 1]}/{l.ano}</title>
+                            </CalendarClock>
+                          )}
                         </p>
                       </div>
                       <span
@@ -385,7 +413,7 @@ export function ExtratoListPage() {
           lancamento={selecionado}
           categorias={categorias}
           onClose={() => setSelecionado(null)}
-          onSave={(categoriaId, obs, descricao) => salvarDetalhe(selecionado.id, categoriaId, obs, descricao)}
+          onSave={(dados) => salvarDetalhe(selecionado.id, dados)}
           onDelete={() => excluir(selecionado.id)}
           onSplit={(partes) => dividir(selecionado, partes)}
         />

@@ -1,10 +1,20 @@
 import { Landmark, PencilLine, Scissors, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Modal } from '../../../shared/components/Modal'
+import { competenciaDaData, deInputMonth, paraInputMonth } from '../lib/competencia'
 import { GRUPOS_CATEGORIA, type Categoria, type Lancamento } from '../lib/types'
+
+const MESES_LABEL = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+]
 
 function formatarMoeda(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function rotuloCompetencia(mes: number, ano: number) {
+  return `${MESES_LABEL[mes - 1]}/${ano}`
 }
 
 function origemInfo(l: Lancamento): { texto: string; Icone: typeof Landmark } {
@@ -36,15 +46,20 @@ export function LancamentoModal({
   lancamento: Lancamento
   categorias: Categoria[]
   onClose: () => void
-  onSave: (categoriaId: string, obs: string, descricao: string) => void
+  onSave: (dados: { categoriaId: string; obs: string; descricao: string; mes: number; ano: number }) => void
   onDelete: () => void
   onSplit: (partes: ParteDivisaoSaida[]) => void
 }) {
   const [categoriaId, setCategoriaId] = useState(lancamento.categoriaId ?? '')
   const [obs, setObs] = useState(lancamento.obs ?? '')
   const [descricao, setDescricao] = useState(lancamento.descricao)
+  const [competencia, setCompetencia] = useState(paraInputMonth(lancamento.ano, lancamento.mes))
   const [dividindo, setDividindo] = useState(false)
   const [partes, setPartes] = useState<ParteForm[]>([])
+
+  const competenciaPadrao = competenciaDaData(lancamento.data)
+  const { mes: mesEscolhido, ano: anoEscolhido } = deInputMonth(competencia)
+  const competenciaFoiAjustada = mesEscolhido !== competenciaPadrao.mes || anoEscolhido !== competenciaPadrao.ano
 
   const categoriasOrdenadas = GRUPOS_CATEGORIA.map((g) => ({
     ...g,
@@ -52,7 +67,13 @@ export function LancamentoModal({
   }))
 
   function salvar() {
-    onSave(categoriaId, obs, descricao.trim() || lancamento.descricao)
+    onSave({
+      categoriaId,
+      obs,
+      descricao: descricao.trim() || lancamento.descricao,
+      mes: mesEscolhido,
+      ano: anoEscolhido,
+    })
     onClose()
   }
 
@@ -243,6 +264,27 @@ export function LancamentoModal({
           )}
         </select>
       </label>
+
+      <div className="campo">
+        <span>Competência (mês que entra no orçamento e na DRE)</span>
+        <input type="month" value={competencia} onChange={(e) => setCompetencia(e.target.value)} />
+        {competenciaFoiAjustada ? (
+          <p className="text-dim text-sm">
+            Lançado em {new Date(lancamento.data).toLocaleDateString('pt-BR')}, contando em{' '}
+            {rotuloCompetencia(mesEscolhido, anoEscolhido)}.{' '}
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ padding: '0 6px', fontSize: 12 }}
+              onClick={() => setCompetencia(paraInputMonth(competenciaPadrao.ano, competenciaPadrao.mes))}
+            >
+              ↺ voltar pro mês da data
+            </button>
+          </p>
+        ) : (
+          <p className="text-dim text-sm">Por padrão, é o mês da data do lançamento.</p>
+        )}
+      </div>
 
       <label>
         Comentário

@@ -151,6 +151,18 @@ Utilitários de layout usados em todo o app em vez de CSS por componente:
 opcionalmente `justify-content: space-between`), `.card`. Prefira reusar
 essas classes a escrever flexbox inline repetido.
 
+### Competência de um lançamento (Finanças)
+
+`Lancamento` guarda `data` (a data real, nunca mexida pela UI) separada de
+`mes`/`ano` (a competência — é o que `getLancamentos(uid, mes, ano)` usa pra
+filtrar, e o que o Resumo e a DRE somam). Por padrão `mes`/`ano` nascem do
+mês da `data` (ver `ImportarExtratoPage.tsx`), mas o usuário pode ajustar a
+competência pelo `LancamentoModal` (campo "Competência") sem alterar a data
+exibida — útil pra jogar um lançamento de fim de mês pro mês seguinte.
+`lib/competencia.ts` tem os helpers (`competenciaDaData`,
+`competenciaAjustada`) usados tanto no modal quanto no badge do Extrato que
+sinaliza quando a competência diverge da data.
+
 ### Padrão de input numérico controlado
 
 Dois problemas resolvidos e que tendem a reaparecer em campo numérico novo:
