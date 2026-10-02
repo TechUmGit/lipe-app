@@ -1,11 +1,21 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
-import { getCategorias, getDreAnotacoesPorAno, getLancamentosPorAno, salvarDreAnotacao } from '../lib/financasApi'
+import {
+  atualizarLancamento,
+  dividirLancamento,
+  getCategorias,
+  getDreAnotacoesPorAno,
+  getLancamentosPorAno,
+  removerLancamento,
+  salvarDreAnotacao,
+  type ParteDivisao,
+} from '../lib/financasApi'
 import { useFinancasRefresh } from '../lib/FinancasRefreshContext'
 import { orcamentoVigente, valorResponsavel } from '../lib/taxas'
 import { GRUPOS_CATEGORIA, type Categoria, type DreAnotacao, type DreCor, type Lancamento } from '../lib/types'
 import { DreCelulaModal } from './DreCelulaModal'
+import { LancamentoModal } from './LancamentoModal'
 import { Moeda } from './Moeda'
 
 const MESES_CURTO = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
@@ -18,33 +28,48 @@ function chaveAnotacao(categoriaId: string, mes: number) {
 
 export function DreTabelaAnual() {
   const { user } = useAuth()
-  const { refreshKey } = useFinancasRefresh()
+  const { refreshKey, notificarMudanca } = useFinancasRefresh()
   const [ano, setAno] = useState(new Date().getFullYear())
-  const [loading, setLoading] = useState(true)
+  const [anoCarregado, setAnoCarregado] = useState<number | null>(null)
+  const [recarregarLocal, setRecarregarLocal] = useState(0)
+  // Só mostra "Carregando..." ao trocar de ano; recargas por edição acontecem em silêncio.
+  const loading = anoCarregado !== ano
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
   const [anotacoes, setAnotacoes] = useState<DreAnotacao[]>([])
-  const [celulaSelecionada, setCelulaSelecionada] = useState<{
-    categoria: Categoria
-    mes: number
-    valor: number
-    lancamentos: Lancamento[]
-  } | null>(null)
+  const [celulaSelecionada, setCelulaSelecionada] = useState<{ categoriaId: string; mes: number } | null>(null)
+  const [lancamentoSelecionado, setLancamentoSelecionado] = useState<Lancamento | null>(null)
 
   useEffect(() => {
     if (!user) return
-    setLoading(true)
+    let cancelado = false
     Promise.all([
       getCategorias(user.uid),
       getLancamentosPorAno(user.uid, ano),
       getDreAnotacoesPorAno(user.uid, ano),
     ]).then(([c, l, a]) => {
+      if (cancelado) return
       setCategorias(c)
       setLancamentos(l)
       setAnotacoes(a)
-      setLoading(false)
+      setAnoCarregado(ano)
     })
-  }, [user, ano, refreshKey])
+    return () => {
+      cancelado = true
+    }
+  }, [user, ano, refreshKey, recarregarLocal])
+
+  // A célula aberta é derivada do estado atual: editar um lançamento atualiza a lista, o total e a tabela juntos.
+  const celulaAberta = useMemo(() => {
+    if (!celulaSelecionada) return null
+    const categoria = categorias.find((c) => c.id === celulaSelecionada.categoriaId)
+    if (!categoria) return null
+    const doMes = lancamentos
+      .filter((l) => l.categoriaId === categoria.id && l.mes === celulaSelecionada.mes)
+      .sort((a, b) => a.data - b.data)
+    const valor = doMes.reduce((s, l) => s + valorResponsavel(l, categoria), 0)
+    return { categoria, mes: celulaSelecionada.mes, valor, lancamentos: doMes }
+  }, [celulaSelecionada, categorias, lancamentos])
 
   const anotacoesPorChave = useMemo(() => {
     const map = new Map<string, DreAnotacao>()
@@ -122,9 +147,49 @@ export function DreTabelaAnual() {
     setAno((a) => a + delta)
   }
 
+  async function salvarLancamento(
+    id: string,
+    dados: { categoriaId: string; obs: string; descricao: string; mes: number; ano: number },
+  ) {
+    if (!user) return
+    const categoriaFinal = dados.categoriaId || null
+    const saiuDoAno = dados.ano !== ano
+    setLancamentos((prev) =>
+      saiuDoAno
+        ? prev.filter((l) => l.id !== id)
+        : prev.map((l) =>
+            l.id === id
+              ? { ...l, categoriaId: categoriaFinal, obs: dados.obs, descricao: dados.descricao, mes: dados.mes, ano: dados.ano }
+              : l,
+          ),
+    )
+    await atualizarLancamento(user.uid, id, {
+      categoriaId: categoriaFinal,
+      obs: dados.obs,
+      descricao: dados.descricao,
+      mes: dados.mes,
+      ano: dados.ano,
+    })
+    notificarMudanca()
+  }
+
+  async function excluirLancamento(id: string) {
+    if (!user) return
+    setLancamentos((prev) => prev.filter((l) => l.id !== id))
+    await removerLancamento(user.uid, id)
+    notificarMudanca()
+  }
+
+  async function dividirLancamentoSelecionado(lancamento: Lancamento, partes: ParteDivisao[]) {
+    if (!user) return
+    await dividirLancamento(user.uid, lancamento, partes)
+    setRecarregarLocal((k) => k + 1)
+    notificarMudanca()
+  }
+
   async function salvarAnotacao(dados: { comentario: string; cor: DreCor | null; destaque: boolean }) {
-    if (!user || !celulaSelecionada) return
-    const { categoria, mes } = celulaSelecionada
+    if (!user || !celulaAberta) return
+    const { categoria, mes } = celulaAberta
     await salvarDreAnotacao(user.uid, { categoriaId: categoria.id, ano, mes, ...dados })
     const chave = chaveAnotacao(categoria.id, mes)
     setAnotacoes((prev) => {
@@ -204,16 +269,7 @@ export function DreTabelaAnual() {
                                 className="dre-table-cell-click"
                                 style={{ color: cor, background: bg }}
                                 title={anot?.comentario || undefined}
-                                onClick={() =>
-                                  setCelulaSelecionada({
-                                    categoria: l.categoria,
-                                    mes,
-                                    valor: v,
-                                    lancamentos: lancamentos
-                                      .filter((lc) => lc.categoriaId === l.categoria.id && lc.mes === mes)
-                                      .sort((a, b) => a.data - b.data),
-                                  })
-                                }
+                                onClick={() => setCelulaSelecionada({ categoriaId: l.categoria.id, mes })}
                               >
                                 {v !== 0 ? <Moeda valor={v} opcoes={OPCOES_SEM_CENTAVOS} /> : '—'}
                               </td>
@@ -268,16 +324,28 @@ export function DreTabelaAnual() {
         </div>
       </div>
 
-      {celulaSelecionada && (
+      {celulaAberta && (
         <DreCelulaModal
-          categoria={celulaSelecionada.categoria}
-          mes={celulaSelecionada.mes}
+          categoria={celulaAberta.categoria}
+          mes={celulaAberta.mes}
           ano={ano}
-          valor={celulaSelecionada.valor}
-          lancamentos={celulaSelecionada.lancamentos}
-          anotacao={anotacoesPorChave.get(chaveAnotacao(celulaSelecionada.categoria.id, celulaSelecionada.mes))}
+          valor={celulaAberta.valor}
+          lancamentos={celulaAberta.lancamentos}
+          anotacao={anotacoesPorChave.get(chaveAnotacao(celulaAberta.categoria.id, celulaAberta.mes))}
           onClose={() => setCelulaSelecionada(null)}
           onSave={salvarAnotacao}
+          onAbrirLancamento={setLancamentoSelecionado}
+        />
+      )}
+
+      {lancamentoSelecionado && (
+        <LancamentoModal
+          lancamento={lancamentoSelecionado}
+          categorias={categorias}
+          onClose={() => setLancamentoSelecionado(null)}
+          onSave={(dados) => salvarLancamento(lancamentoSelecionado.id, dados)}
+          onDelete={() => excluirLancamento(lancamentoSelecionado.id)}
+          onSplit={(partes) => dividirLancamentoSelecionado(lancamentoSelecionado, partes)}
         />
       )}
     </div>

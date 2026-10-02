@@ -163,6 +163,13 @@ exibida — útil pra jogar um lançamento de fim de mês pro mês seguinte.
 `competenciaAjustada`) usados tanto no modal quanto no badge do Extrato que
 sinaliza quando a competência diverge da data.
 
+Na DRE (desktop, `DreTabelaAnual`), a célula aberta guarda só `{categoriaId, mes}`
+e a lista/total do `DreCelulaModal` são **derivados** do estado de lançamentos —
+nunca um retrato —, por isso editar/excluir/dividir um lançamento pelo
+`LancamentoModal` aberto a partir dali atualiza modal, tabela e os demais
+painéis (via `notificarMudanca`). O `ExtratoListPage` agora também escuta
+`refreshKey`, mas ignora as próprias notificações pra não recarregar a lista.
+
 ### Padrão de input numérico controlado
 
 Dois problemas resolvidos e que tendem a reaparecer em campo numérico novo:

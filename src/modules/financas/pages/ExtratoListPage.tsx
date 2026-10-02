@@ -35,7 +35,15 @@ const ANO_ATUAL = new Date().getFullYear()
 
 export function ExtratoListPage() {
   const { user } = useAuth()
-  const { notificarMudanca } = useFinancasRefresh()
+  const { refreshKey, notificarMudanca: notificarMudancaGlobal } = useFinancasRefresh()
+  const refreshProprio = useRef<number | null>(null)
+  const ultimoRefresh = useRef(refreshKey)
+
+  // Avisa os outros painéis sem recarregar a si mesmo (senão a lista pula pro topo a cada edição).
+  function notificarMudanca() {
+    refreshProprio.current = refreshKey + 1
+    notificarMudancaGlobal()
+  }
   const [mesFiltro, setMesFiltro] = useState<number | null>(null)
   const [anoFiltro, setAnoFiltro] = useState(ANO_ATUAL)
   const [anoFiltroTexto, setAnoFiltroTexto] = useState(String(ANO_ATUAL))
@@ -89,8 +97,11 @@ export function ExtratoListPage() {
   }
 
   useEffect(() => {
+    const veioDeRefresh = ultimoRefresh.current !== refreshKey
+    ultimoRefresh.current = refreshKey
+    if (veioDeRefresh && refreshProprio.current === refreshKey) return
     carregar()
-  }, [user, mesFiltro, anoFiltro, filtrosAtivos])
+  }, [user, mesFiltro, anoFiltro, filtrosAtivos, refreshKey])
 
   const carregarMais = useCallback(async () => {
     if (!user || mesFiltro || filtrosAtivos || carregandoMais || !temMais) return

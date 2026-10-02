@@ -1,5 +1,7 @@
+import { CalendarClock } from 'lucide-react'
 import { useState } from 'react'
 import { Modal } from '../../../shared/components/Modal'
+import { competenciaAjustada } from '../lib/competencia'
 import { valorResponsavel } from '../lib/taxas'
 import { MESES } from './MonthSwitcher'
 import { Moeda } from './Moeda'
@@ -14,6 +16,7 @@ export function DreCelulaModal({
   anotacao,
   onClose,
   onSave,
+  onAbrirLancamento,
 }: {
   categoria: Categoria
   mes: number
@@ -23,6 +26,7 @@ export function DreCelulaModal({
   anotacao: DreAnotacao | undefined
   onClose: () => void
   onSave: (dados: { comentario: string; cor: DreCor | null; destaque: boolean }) => void
+  onAbrirLancamento: (lancamento: Lancamento) => void
 }) {
   const [comentario, setComentario] = useState(anotacao?.comentario ?? '')
   const [cor, setCor] = useState<DreCor | null>(anotacao?.cor ?? null)
@@ -46,19 +50,39 @@ export function DreCelulaModal({
         <span className="text-dim text-sm">
           {lancamentos.length === 0
             ? 'Nenhum lançamento nesse mês'
-            : `${lancamentos.length} lançamento(s) somam esse valor`}
+            : `${lancamentos.length} lançamento(s) somam esse valor · toque num para editar`}
         </span>
         {lancamentos.length > 0 && (
           <div className="stack" style={{ gap: 0 }}>
             {lancamentos.map((l) => {
               const ajustado = valorResponsavel(l, categoria)
               return (
-                <div key={l.id} className="row-between text-sm" style={{ padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+                <div
+                  key={l.id}
+                  className="row-between text-sm"
+                  role="button"
+                  tabIndex={0}
+                  style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                  onClick={() => onAbrirLancamento(l)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      onAbrirLancamento(l)
+                    }
+                  }}
+                >
                   <div style={{ minWidth: 0 }}>
                     <p style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {l.descricao}
                     </p>
-                    <p className="text-dim text-sm">{new Date(l.data).toLocaleDateString('pt-BR')}</p>
+                    <p className="text-dim text-sm row" style={{ gap: 4 }}>
+                      {new Date(l.data).toLocaleDateString('pt-BR')}
+                      {competenciaAjustada(l) && (
+                        <CalendarClock size={12} strokeWidth={1.5} color="var(--accent-strong)" aria-label="Competência ajustada">
+                          <title>Competência ajustada: conta em {MESES[l.mes - 1]}/{l.ano}</title>
+                        </CalendarClock>
+                      )}
+                    </p>
                   </div>
                   <span
                     style={{
