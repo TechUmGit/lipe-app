@@ -13,6 +13,7 @@ import {
   dataReferencia,
   geraReceitaDaquiPraFrente,
   normalizar,
+  projetoTemPessoa,
   subtarefaVencida,
 } from '../lib/calculo'
 import { deInputDate, formatarData } from '../lib/datas'
@@ -37,7 +38,7 @@ interface ItemAtividade {
 
 export function AtividadesPage() {
   const isDesktop = useIsDesktop()
-  const { projetos, loading, busca, filtroReceita } = useProjetosContexto()
+  const { projetos, loading, busca, filtroReceita, filtroPessoa } = useProjetosContexto()
   const {
     alternarConcluida,
     removerAtividade,
@@ -64,6 +65,7 @@ export function AtividadesPage() {
     const termo = normalizar(busca.trim())
     return ativos.filter((p) => {
       if (termo && !normalizar(p.nome).includes(termo)) return false
+      if (!projetoTemPessoa(p, filtroPessoa)) return false
       if (filtroReceita !== 'todos') {
         const geraReceita = geraReceitaDaquiPraFrente(p, ANO_ATUAL)
         if (filtroReceita === 'com_receita' && !geraReceita) return false
@@ -71,7 +73,7 @@ export function AtividadesPage() {
       }
       return true
     })
-  }, [ativos, busca, filtroReceita])
+  }, [ativos, busca, filtroReceita, filtroPessoa])
 
   const itens = useMemo(() => {
     const lista: ItemAtividade[] = []

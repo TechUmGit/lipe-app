@@ -3,7 +3,13 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../../core/AuthContext'
 import { Topbar } from '../../shared/components/Topbar'
 import { useIsDesktop } from '../../shared/hooks/useIsDesktop'
-import { FILTROS_RECEITA, STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, type FiltroReceita } from './lib/calculo'
+import {
+  FILTROS_RECEITA,
+  STATUS_PROJETO_LABEL,
+  STATUS_PROJETO_ORDEM,
+  pessoasDosProjetos,
+  type FiltroReceita,
+} from './lib/calculo'
 import { ProjetosContext } from './lib/ProjetosContext'
 import { getProjetos } from './lib/projetosApi'
 import type { Projeto } from './lib/types'
@@ -15,6 +21,7 @@ export function ProjetosLayout() {
   const [loading, setLoading] = useState(true)
   const [busca, setBusca] = useState('')
   const [filtroReceita, setFiltroReceita] = useState<FiltroReceita>('todos')
+  const [filtroPessoa, setFiltroPessoa] = useState('')
 
   useEffect(() => {
     document.body.classList.toggle('wide', isDesktop)
@@ -43,6 +50,10 @@ export function ProjetosLayout() {
       })).filter((grupo) => grupo.projetos.length > 0),
     [projetos],
   )
+
+  const pessoas = useMemo(() => pessoasDosProjetos(projetos), [projetos])
+  // Se a pessoa deixou de existir (removida dos projetos), o filtro não pode ficar preso num valor sem opção.
+  const filtroPessoaValido = filtroPessoa && pessoas.some((p) => p === filtroPessoa) ? filtroPessoa : ''
 
   return (
     <>
@@ -81,6 +92,20 @@ export function ProjetosLayout() {
               </button>
             ))}
           </div>
+          {pessoas.length > 0 && (
+            <select
+              value={filtroPessoaValido}
+              onChange={(e) => setFiltroPessoa(e.target.value)}
+              aria-label="Filtrar por pessoa envolvida"
+            >
+              <option value="">Todas as pessoas</option>
+              {pessoas.map((pessoa) => (
+                <option key={pessoa} value={pessoa}>
+                  {pessoa}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
       <nav className="tabs">
@@ -95,7 +120,18 @@ export function ProjetosLayout() {
         </NavLink>
       </nav>
       <div className="page">
-        <ProjetosContext.Provider value={{ projetos, setProjetos, loading, recarregar, busca, setBusca, filtroReceita, setFiltroReceita }}>
+        <ProjetosContext.Provider value={{
+            projetos,
+            setProjetos,
+            loading,
+            recarregar,
+            busca,
+            setBusca,
+            filtroReceita,
+            setFiltroReceita,
+            filtroPessoa: filtroPessoaValido,
+            setFiltroPessoa,
+          }}>
           <Outlet />
         </ProjetosContext.Provider>
       </div>

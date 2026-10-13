@@ -2,7 +2,7 @@ import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Fragment, useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { ProjetoModal } from '../components/ProjetoModal'
-import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, normalizar, valorNoMes, valoresDoAno } from '../lib/calculo'
+import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, normalizar, projetoTemPessoa, valorNoMes, valoresDoAno } from '../lib/calculo'
 import { useProjetosContexto } from '../lib/ProjetosContext'
 import { atualizarProjeto, removerProjeto } from '../lib/projetosApi'
 import type { NovoProjeto, Projeto } from '../lib/types'
@@ -15,7 +15,7 @@ function formatarMoeda(v: number) {
 
 export function ProjecoesPage() {
   const { user } = useAuth()
-  const { projetos, loading, busca, filtroReceita, recarregar } = useProjetosContexto()
+  const { projetos, loading, busca, filtroReceita, filtroPessoa, recarregar } = useProjetosContexto()
   const [ano, setAno] = useState(new Date().getFullYear())
   const [gruposColapsados, setGruposColapsados] = useState<Set<Projeto['status']>>(new Set())
   const [editando, setEditando] = useState<Projeto | null>(null)
@@ -46,9 +46,10 @@ export function ProjecoesPage() {
     return projetos.filter((p) => {
       if (p.status === 'cancelado') return false
       if (termo && !normalizar(p.nome).includes(termo)) return false
+      if (!projetoTemPessoa(p, filtroPessoa)) return false
       return true
     })
-  }, [projetos, busca])
+  }, [projetos, busca, filtroPessoa])
 
   const tabela = useMemo(() => {
     const todasLinhas = ativos.map((p) => ({ projeto: p, meses: valoresDoAno(p, ano) }))

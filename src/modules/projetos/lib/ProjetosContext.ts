@@ -11,6 +11,8 @@ export interface ProjetosContextValue {
   setBusca: (valor: string) => void
   filtroReceita: FiltroReceita
   setFiltroReceita: (valor: FiltroReceita) => void
+  filtroPessoa: string
+  setFiltroPessoa: (valor: string) => void
 }
 
 export const ProjetosContext = createContext<ProjetosContextValue | null>(null)

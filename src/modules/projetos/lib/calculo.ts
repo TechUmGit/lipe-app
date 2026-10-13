@@ -67,6 +67,28 @@ export function normalizar(s: string): string {
     .replace(/[\u0300-\u036f]/g, '')
 }
 
+/** Pessoas distintas (ignorando maiúsculas/acentos) de todos os projetos, em ordem alfabética; entre grafias iguais, prefere a que não é toda minúscula. */
+export function pessoasDosProjetos(projetos: Pick<Projeto, 'pessoasEnvolvidas'>[]): string[] {
+  const porChave = new Map<string, string>()
+  for (const p of projetos) {
+    for (const pessoa of p.pessoasEnvolvidas ?? []) {
+      const nome = pessoa.trim()
+      const chave = normalizar(nome)
+      if (!chave) continue
+      const atual = porChave.get(chave)
+      if (atual === undefined || (atual === atual.toLowerCase() && nome !== nome.toLowerCase())) porChave.set(chave, nome)
+    }
+  }
+  return [...porChave.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+}
+
+/** Filtro vazio aceita qualquer projeto; senão o projeto precisa ter a pessoa entre os envolvidos. */
+export function projetoTemPessoa(p: Pick<Projeto, 'pessoasEnvolvidas'>, pessoa: string): boolean {
+  if (!pessoa) return true
+  const alvo = normalizar(pessoa.trim())
+  return (p.pessoasEnvolvidas ?? []).some((x) => normalizar(x.trim()) === alvo)
+}
+
 export function subtarefaVencida(s: Pick<Subtarefa, 'concluida' | 'vencimento'>): boolean {
   if (s.concluida || !s.vencimento) return false
   const hoje = new Date()

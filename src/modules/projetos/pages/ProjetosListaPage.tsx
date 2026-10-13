@@ -2,7 +2,7 @@ import { ArrowDownWideNarrow, LayoutGrid, List, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { ProjetoModal } from '../components/ProjetoModal'
-import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, geraReceitaDaquiPraFrente, normalizar, valoresDoAno } from '../lib/calculo'
+import { STATUS_PROJETO_LABEL, STATUS_PROJETO_ORDEM, geraReceitaDaquiPraFrente, normalizar, projetoTemPessoa, valoresDoAno } from '../lib/calculo'
 import { useProjetosContexto } from '../lib/ProjetosContext'
 import { atualizarProjeto, criarProjeto, removerProjeto } from '../lib/projetosApi'
 import type { NovoProjeto, Projeto } from '../lib/types'
@@ -15,7 +15,7 @@ function formatarMoeda(v: number) {
 
 export function ProjetosListaPage() {
   const { user } = useAuth()
-  const { projetos, loading, busca, filtroReceita, recarregar } = useProjetosContexto()
+  const { projetos, loading, busca, filtroReceita, filtroPessoa, recarregar } = useProjetosContexto()
   const [editando, setEditando] = useState<Projeto | 'novo' | null>(null)
   const [visao, setVisao] = useState<'cards' | 'lista'>('lista')
   const [ordenarPorReceita, setOrdenarPorReceita] = useState(false)
@@ -41,6 +41,7 @@ export function ProjetosListaPage() {
     return projetos
       .filter((p) => {
         if (termo && !normalizar(p.nome).includes(termo)) return false
+        if (!projetoTemPessoa(p, filtroPessoa)) return false
         if (filtroReceita !== 'todos') {
           const geraReceita = geraReceitaDaquiPraFrente(p, ANO_ATUAL)
           if (filtroReceita === 'com_receita' && !geraReceita) return false
@@ -49,7 +50,7 @@ export function ProjetosListaPage() {
         return true
       })
       .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
-  }, [projetos, busca, filtroReceita])
+  }, [projetos, busca, filtroReceita, filtroPessoa])
 
   const receitaAnualPorId = useMemo(() => {
     const mapa = new Map<string, number>()
