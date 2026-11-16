@@ -37,9 +37,12 @@ export function PerspectivaMesModal({
   const [custodiaOutros, setCustodiaOutros] = useState(linha.preenchido ? linha.custodiaOutros : 0)
   const [reinicios, setReinicios] = useState({ retiradas: 0, consorcios: 0 })
 
+  // Sem o saldo das custódias não dá pra considerar o mês conferido: salva como pendente em vez de bloquear.
+  const semCustodia = preenchido && custodiaFillipe === 0 && custodiaOutros === 0
+
   function salvar() {
     const dados: MesPerspectiva = {}
-    if (preenchido) {
+    if (preenchido && !semCustodia) {
       dados.preenchido = true
       dados.investimentos = investimentos
       dados.consorcios = consorcios
@@ -59,7 +62,6 @@ export function PerspectivaMesModal({
   }
 
   const pendente = !preenchido
-  const semCustodia = preenchido && custodiaFillipe === 0 && custodiaOutros === 0
 
   return (
     <Modal onClose={onClose}>
@@ -180,9 +182,11 @@ export function PerspectivaMesModal({
         <span>Mês preenchido (linha conferida)</span>
       </label>
 
-      {semCustodia && <p className="error-text">Informe o saldo das custódias para marcar o mês como preenchido.</p>}
+      {semCustodia && (
+        <p className="text-dim text-sm">Sem o saldo das custódias, o mês é salvo como pendente (em projeção), mantendo o que você digitou.</p>
+      )}
 
-      <button type="button" className="btn btn-primary" onClick={salvar} disabled={semCustodia}>
+      <button type="button" className="btn btn-primary" onClick={salvar}>
         Salvar
       </button>
     </Modal>
