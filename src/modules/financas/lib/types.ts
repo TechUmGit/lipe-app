@@ -147,9 +147,12 @@ export interface MesPerspectiva {
   investimentos?: number
   consorcios?: number
   retiradas?: number
+  /** Aparece como "Outros" na interface; o nome do campo ficou pra não quebrar planos e backups já salvos. */
   xCapital?: number
   custodiaFillipe?: number
   custodiaOutros?: number
+  /** Anotação livre do mês (ex.: no que o dinheiro está sendo gasto). */
+  obs?: string
 }
 
 export interface PlanoPerspectiva {

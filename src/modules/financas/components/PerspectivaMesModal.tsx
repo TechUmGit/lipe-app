@@ -32,6 +32,7 @@ export function PerspectivaMesModal({
   const [consorciosAuto, setConsorciosAuto] = useState(linha.consorciosAutomatico && !linha.preenchido)
   const [xCapital, setXCapital] = useState(linha.xCapital)
   const [investimentos, setInvestimentos] = useState(linha.investimentos)
+  const [obs, setObs] = useState(linha.obs ?? '')
   const [custodiaFillipe, setCustodiaFillipe] = useState(linha.preenchido ? linha.custodiaFillipe : 0)
   const [custodiaOutros, setCustodiaOutros] = useState(linha.preenchido ? linha.custodiaOutros : 0)
   const [reinicios, setReinicios] = useState({ retiradas: 0, consorcios: 0 })
@@ -52,6 +53,7 @@ export function PerspectivaMesModal({
       if (!retiradasAuto) dados.retiradas = retiradas
       if (xCapital !== 0) dados.xCapital = xCapital
     }
+    if (obs.trim()) dados.obs = obs.trim()
     onSave(Object.keys(dados).length > 0 ? dados : null)
     onClose()
   }
@@ -102,7 +104,7 @@ export function PerspectivaMesModal({
       </div>
 
       <div className="campo">
-        X Capital
+        Outros
         <MoedaInputComSinal selecionarAoFocar valor={xCapital} onChange={setXCapital} />
       </div>
 
@@ -141,6 +143,16 @@ export function PerspectivaMesModal({
         Investimentos (aporte inicial ou extra)
         <MoedaInputComSinal selecionarAoFocar valor={investimentos} onChange={setInvestimentos} />
       </div>
+
+      <label>
+        Observações
+        <textarea
+          rows={3}
+          value={obs}
+          onChange={(e) => setObs(e.target.value)}
+          placeholder="No que o dinheiro está sendo gasto neste mês..."
+        />
+      </label>
 
       {preenchido && (
         <div className="stack" style={{ gap: 10 }}>

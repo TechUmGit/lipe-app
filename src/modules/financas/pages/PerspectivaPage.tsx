@@ -1,4 +1,4 @@
-import { Check, Download, Eye, EyeOff, Snowflake, SlidersHorizontal, Upload } from 'lucide-react'
+import { Check, Download, Eye, EyeOff, Snowflake, SlidersHorizontal, StickyNote, Upload } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useAuth } from '../../../core/AuthContext'
 import { Topbar } from '../../../shared/components/Topbar'
@@ -405,7 +405,7 @@ export function PerspectivaPage() {
                       {detalhado && <th>Investimentos</th>}
                       <th>Consórcios</th>
                       <th>Retiradas</th>
-                      <th>X Capital</th>
+                      <th>Outros</th>
                       <th>Total entradas</th>
                       <th>P/L Projetado</th>
                       <th>Custódia Fillipe</th>
@@ -440,6 +440,11 @@ export function PerspectivaPage() {
                               <span style={{ width: 14 }} />
                             )}
                             {rotuloMes(l.chave)}
+                            {l.obs && (
+                              <StickyNote size={13} strokeWidth={1.5} color="var(--accent-strong)" aria-label="Tem observação">
+                                <title>{l.obs}</title>
+                              </StickyNote>
+                            )}
                             {l.idade !== undefined && (
                               <span className="text-dim" style={{ fontSize: 11 }}>
                                 {l.idade}a

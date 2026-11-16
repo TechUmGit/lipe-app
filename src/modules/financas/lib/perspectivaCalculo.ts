@@ -97,6 +97,7 @@ export interface LinhaPerspectiva {
   deltaProjetado?: number
   plProjetadoLiquido: number
   salarioSemInflacao: number
+  obs?: string
 }
 
 export interface ResultadoPerspectiva {
@@ -181,6 +182,7 @@ export function calcularPerspectiva(plano: PlanoPerspectiva): ResultadoPerspecti
       deltaProjetado: plCongelado !== undefined ? plReal - plCongelado : undefined,
       plProjetadoLiquido,
       salarioSemInflacao: plProjetadoLiquido * rr,
+      obs: dado.obs,
     })
 
     anterior = {

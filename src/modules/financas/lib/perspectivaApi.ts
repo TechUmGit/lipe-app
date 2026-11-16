@@ -92,8 +92,9 @@ export function validarBackup(bruto: unknown): PlanoPerspectiva | string {
   if (!meses || typeof meses !== 'object') return 'O arquivo não tem os meses.'
   for (const [chave, valor] of Object.entries(meses as Record<string, unknown>)) {
     if (!REGEX_CHAVE_MES.test(chave) || !valor || typeof valor !== 'object') return `Mês inválido: ${chave}.`
-    for (const v of Object.values(valor as Record<string, unknown>)) {
-      if (typeof v !== 'number' && typeof v !== 'boolean') return `Valor inválido em ${chave}.`
+    for (const [campo, v] of Object.entries(valor as Record<string, unknown>)) {
+      const valido = campo === 'obs' ? typeof v === 'string' : typeof v === 'number' || typeof v === 'boolean'
+      if (!valido) return `Valor inválido em ${chave}.`
     }
   }
   const congelado = obj.planoCongelado as Record<string, unknown> | undefined

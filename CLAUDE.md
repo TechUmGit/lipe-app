@@ -112,7 +112,8 @@ Real, que é nominal. Depois da idade-meta os valores nominais ficam inflados. T
 - Mês com `preenchido: true` usa a custódia real digitada; os demais
   projetam a partir do último saldo conhecido. Campo ausente no mês =
   regra padrão (retiradas corrigem pela inflação, consórcios repetem o mês
-  anterior, X Capital e investimentos = 0).
+  anterior, Outros e investimentos = 0). "Outros" é o campo `xCapital`
+  renomeado só na interface; cada mês também guarda uma `obs` livre.
 - Exportar/Importar JSON na própria tela é o caminho pra migrar dados.
 
 **O repositório é público**: nunca commite dados financeiros pessoais
